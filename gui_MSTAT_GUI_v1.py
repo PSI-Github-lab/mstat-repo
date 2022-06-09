@@ -387,6 +387,7 @@ class MSTAT_Ctrl():
             if row[3] == "Train":
                 #conv_check = checkMZML(str(row[0].absolute()), row[2])  # check if all raw files have been converted
                 conv_check = checkNPY(str(row[0].absolute()), row[2])
+                print('conv_check', conv_check)
                 
                 # if the class name is not empty and the files have been converted and the path is not in the dictionary or conversion status has changed (to completed)
                 if conv_check > 0 and (row[0] not in self.training_dict or self.training_dict[row[0]]['conv_check'] != conv_check):
@@ -463,8 +464,8 @@ class MSTAT_Ctrl():
         
     def update_conversion_list(self):
         self.conversion_list = []
-        self.conversion_list = [key for key in self.training_dict if self.training_dict[key]['conv_check'] == 0]
-        self.conversion_list.extend(key for key in self.testing_dict if self.testing_dict[key]['conv_check'] == 0)
+        self.conversion_list = [key for key in self.training_dict if self.training_dict[key]['conv_check'] <= 0]
+        self.conversion_list.extend(key for key in self.testing_dict if self.testing_dict[key]['conv_check'] <= 0)
 
         # if some RAW files remain unconverted, offer the user the option to convert them
         if self.conversion_list and self.ctrl_state != ControlStates.LOADING:
