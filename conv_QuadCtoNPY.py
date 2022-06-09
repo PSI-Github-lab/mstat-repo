@@ -40,7 +40,7 @@ def main():
         metadata = []
         for file in tqdm(os.listdir(dir), desc='Processed files: ', total=len(os.listdir(dir))):
             if file.endswith('txt'):
-                a, b, c = quadc_to_numpy_array(rf'{dir}\{file}', add_noise=True)
+                a, b, c = quadc_to_numpy_array(rf'{dir}\{file}', add_noise=False)
                 mzs.append(a)
                 intens.append(b)
                 metadata.append(c)

@@ -25,7 +25,7 @@ def checkNPY(path, num_raw):
             elif num_rows == 0:
                 return 0
             return 2
-    return 2
+    return -1
 
 def calcBins(low, up, bin_size, mz_lims = None):
     if mz_lims is None:
