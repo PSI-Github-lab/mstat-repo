@@ -1,0 +1,3 @@
+dummy
+lda
+pca 120,lda

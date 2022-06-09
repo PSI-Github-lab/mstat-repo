@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1275</width>
+    <height>730</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="central_widget">
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>1251</width>
+      <height>671</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontal_layout">
+     <item>
+      <layout class="QVBoxLayout" name="filefolder_layout">
+       <item>
+        <layout class="QGridLayout" name="data_grid">
+         <item row="1" column="0">
+          <widget class="QPushButton" name="testdata_button">
+           <property name="text">
+            <string>Select Testing CSV</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QPushButton" name="trainingdata_button">
+           <property name="text">
+            <string>Select Training CSV</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="testdata_label">
+           <property name="text">
+            <string>No data selected...</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="trainingdata_label">
+           <property name="text">
+            <string>No data selected...</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="folderview_label">
+         <property name="text">
+          <string>Folder View</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTreeView" name="file_tview"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="graph_layout">
+       <item>
+        <spacer name="graph_spacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="graphoption_layout">
+         <item row="1" column="1">
+          <widget class="QComboBox" name="xaxis_combo">
+           <item>
+            <property name="text">
+             <string>PC1</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QComboBox" name="model_combo">
+           <item>
+            <property name="text">
+             <string>PCA Scores</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>PCA-LDA Scores</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>PCA Loadings</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>PCA-LDA Loadings</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="xaxis_label">
+           <property name="text">
+            <string>x-axis</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="modelplot_label">
+           <property name="text">
+            <string>Plot</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QLabel" name="yaxis_label">
+           <property name="text">
+            <string>y-axis</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QComboBox" name="yaxis_combo">
+           <item>
+            <property name="text">
+             <string>PC2</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="model_layout">
+       <item>
+        <widget class="QLabel" name="pcalda_label">
+         <property name="text">
+          <string>PCA-LDA Model</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="modeloptions_layout">
+         <item row="1" column="2">
+          <widget class="QPushButton" name="savemodel_button">
+           <property name="text">
+            <string>Save Model</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QPushButton" name="trainmodel_button">
+           <property name="text">
+            <string>Train Model</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QPushButton" name="loadmodel_button">
+           <property name="text">
+            <string>Load Model</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1" rowspan="3">
+          <widget class="QLineEdit" name="pcadim_edit"/>
+         </item>
+         <item row="0" column="0" rowspan="3">
+          <widget class="QLabel" name="pcadim_label">
+           <property name="text">
+            <string># of PCA Dimensions for LDA</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="plotteddata_label">
+         <property name="text">
+          <string>Plotted Data</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTableView" name="plotteddata_view"/>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1275</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionAbout"/>
+    <addaction name="actionOpen_Folder"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <addaction name="menuFile"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About...</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionOpen_Folder">
+   <property name="text">
+    <string>Open Folder</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

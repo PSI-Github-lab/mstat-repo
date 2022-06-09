@@ -1,0 +1,6 @@
+dummy
+sscl,rfc
+pca 15,knc
+pca 10,tre
+pca 50,lda
+pca 7,qda
