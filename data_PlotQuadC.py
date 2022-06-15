@@ -35,25 +35,36 @@ def main():
     print(f"--- completed in {time.time() - start_time} seconds ---")
 
     print('Bins Shape', mzs.shape, 'Counts Shape', intens.shape)
+    print('m/z limits', metadata['lowlim'], metadata['uplim'])
 
     spectrum = np.sum(intens, axis=0)
 
     figure = plt.figure()
 
-    plt.plot(mzs[0], spectrum)
-    plt.title(os.path.basename(metadata['filename']))
-    plt.grid()
-    plt.xlabel('m/z (Da)')
-    plt.ylabel('counts (A.U.)')
+    plt.plot(mzs[0], spectrum, label='Spectral Sum')
+    plt.plot(mzs[0], intens[-1], label='Last Scan')
 
-    bin_size = 1.0
-    low_lim = 100.#float(metadata['lowlim'])
-    up_lim = 1000.#float(metadata['uplim'])
+    bin_size = 0.5
+    low_lim = float(metadata['lowlim'])
+    up_lim = float(metadata['uplim'])
     bins, num_bins = calcBins(low_lim, up_lim, bin_size)
     stats, bin_edges, _ = binned_statistic(mzs[0], spectrum, 'mean', bins=num_bins, range=(low_lim, up_lim))
 
     stats[np.isnan(stats)] = 0
-    plt.plot(bin_edges[:-1] + bin_size/2, stats)
+    plt.plot(bin_edges[:-1] + bin_size/2, stats, label='Binned Spectral Sum')
+    plt.title(os.path.basename(metadata['filename']))
+    plt.grid()
+    plt.xlabel('m/z (Da)')
+    plt.ylabel('counts (A.U.)')
+    plt.legend()
+
+    figure = plt.figure()
+    plt.plot(np.sum(intens, axis=1), label='TIC')
+    plt.title(os.path.basename(metadata['filename']))
+    plt.grid()
+    plt.xlabel('Scan #')
+    plt.ylabel('counts (A.U.)')
+    plt.legend()
     
     plt.show()
 

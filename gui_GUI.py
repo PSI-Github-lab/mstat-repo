@@ -169,3 +169,11 @@ class MainGUI(QtWidgets.QMainWindow):
         if ret == QMessageBox.Yes:
             return True
         return False
+
+    def show_text_dialog(self, message : str, window_title : str) -> tuple:
+        text, ok = QInputDialog.getText(self, window_title, message)
+        return text, ok
+
+    def show_file_save(self, window_title : str, path : str) -> tuple:
+        name, ok = QFileDialog.getSaveFileName(self, window_title, path)
+        return name, ok

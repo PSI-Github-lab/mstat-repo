@@ -73,15 +73,19 @@ def quadc_to_numpy_matrix(path : str):
 
     return mzs, intens, np.sum(intens, axis=1), np.array(ret_times), metadata
 
-def quadc_to_numpy_array(path : str, add_noise=False):
+def quadc_to_numpy_array(path : str, noise_coef=0.0, mca_mode=False):
     try:
         mzs, intens, tics, _, metadata = quadc_to_numpy_matrix(path)
     except Exception as exc:
         raise exc
 
-    spectrum = np.sum(intens, axis=0)
-    if add_noise:
-        spectrum = spectrum + white_noise(shape=spectrum.shape, magnitude=2*np.mean(spectrum))
+    if mca_mode:
+        spectrum = intens[-1]
+    else:
+        spectrum = np.sum(intens, axis=0)
+    
+    if noise_coef != 0.0:
+        spectrum = spectrum + white_noise(shape=spectrum.shape, magnitude=noise_coef*np.mean(spectrum))
         
 
     return mzs, spectrum, metadata

@@ -8,7 +8,7 @@ from dependencies.file_conversion.QuadCConversion import *
 
 
 def main():
-    multi_dir_log = 'multidirlog'
+    multi_dir_log = 'quadnpy'
 
     # define working directory
     dirhandler = DirHandler(log_name=multi_dir_log, dir=os.path.dirname(os.path.abspath(__file__)))
@@ -28,28 +28,38 @@ def main():
 
     dirhandler.writeDirs()
 
-    for dir in in_directories:
-        if get_num_files(dir, '.txt') == 0:
-            raise ValueError(f'No data files found in {os.path.basename(dir)}')
-        print('Viewing:', os.path.basename(dir))
+    for directory in in_directories:
+        if get_num_files(directory, '.txt') == 0:
+            raise ValueError(f'No data files found in {os.path.basename(directory)}')
+        print('\nViewing:', os.path.basename(directory))
 
         start_time = time.time()
 
         mzs = []
         intens = []
         metadata = []
-        for file in tqdm(os.listdir(dir), desc='Processed files: ', total=len(os.listdir(dir))):
+        mca_check = False
+        for file in os.listdir(directory):
             if file.endswith('txt'):
-                a, b, c = quadc_to_numpy_array(rf'{dir}\{file}', add_noise=False)
-                mzs.append(a)
-                intens.append(b)
-                metadata.append(c)
+                if file.lower() in ['mca.txt', 'mca mode.txt', 'mcamode.txt']:
+                    mca_check = True
+                    print('MCA MODE DETECTED')
+
+        for file in tqdm(os.listdir(directory), desc='Processed files: ', total=len(os.listdir(directory))):
+            if file.endswith('txt'):
+                if file.lower() in ['mca.txt', 'mca mode.txt', 'mcamode.txt']:
+                    pass
+                else:
+                    a, b, c = quadc_to_numpy_array(rf'{directory}\{file}', noise_coef=0.0, mca_mode=mca_check)
+                    mzs.append(a)
+                    intens.append(b)
+                    metadata.append(c)
 
         mzs = mzs[0][0]     # only need one of these lines for now, but that could change...
         intens = np.array(intens)
         metadata = np.array(metadata)
 
-        file_name = rf'{dir}\{os.path.basename(dir)}.npy'
+        file_name = rf'{directory}\{os.path.basename(directory)}.npy'
         with open(file_name, 'wb') as f:
             np.save(f, np.array(intens))
             np.save(f, np.array(mzs))    
@@ -58,8 +68,11 @@ def main():
         print(f"--- completed in {time.time() - start_time} seconds ---")
 
         print('Bins Shape', mzs.shape, 'Counts Shape', intens.shape)
-        print(metadata)
+        print('Meta data example', metadata[0])
 
+    #input('Press ENTER to leave script...')
+    #quit()
+    
     figure = plt.figure()
 
     i = 0
@@ -70,7 +83,7 @@ def main():
     plt.ylabel('counts (A.U.)')
 
     plt.show()
-
+    
 
 if __name__ == '__main__':
     main()

@@ -50,7 +50,7 @@ class ConversionWorker(QtCore.QRunnable):
                             os.mkdir(rf'{self.path}\MZML')
                         if not exists(rf'{self.path}\MZML\{file.split(".")[0]}.mzml'): # if the file is not already converted, then do it
                             run_single_batch(self.path, file)
-                    a, b, c = raw_to_numpy_array(rf'{self.path}\{file}', sel_region=True, smoothing=True)
+                    a, b, c = raw_to_numpy_array(rf'{self.path}\{file}', sel_region=True, smoothing=False)
                     mzs.append(a)
                     intens.append(b)
                     metadata.append(c)

@@ -127,7 +127,7 @@ def calcDK(class1, class2):
 
 def diagPower(feature_data, labels):
     u_labels = np.unique(labels)
-
+    print(u_labels)
     # calculate fisher discriminant ratio
     FDR = calcFDR(feature_data[(labels==u_labels[0]),:], feature_data[(labels==u_labels[1]),:])
     # calculate dong-kathari coef
@@ -147,8 +147,8 @@ def diagPower(feature_data, labels):
 
     #print(f"Fisher Discriminant Ratio: {FDR}")
     #print( """Fisher Discr. Ratio:  {:.2e}""".format(FDR))
-    print(f"""Dong-Kothari Coef:    {DKC} {ind} {calcDK(feature_data[(labels==u_labels[0]),:], feature_data[(labels==u_labels[1]),:])}""")
-    print(f"""Silhouette Coef:      {SC}""")
+    print("""Dong-Kothari Coef:    {:.3f} {:.3f} {:.3f}""".format(DKC, ind, calcDK(feature_data[(labels==u_labels[0]),:], feature_data[(labels==u_labels[1]),:])))
+    print("""Silhouette Coef:      {:.5f}""".format(SC))
 
     return FDR, DKC, SC
 
@@ -321,7 +321,7 @@ def main():
 
     else:
         # get directories
-        dirhandler = DirHandler(log_name='rawtocsv', dir=os.path.dirname(os.path.abspath(__file__)))
+        dirhandler = DirHandler(log_name='diagpwr', dir=os.path.dirname(os.path.abspath(__file__)))
         dirhandler.readDirs()
         dirs = dirhandler.getDirs()
     
@@ -345,11 +345,15 @@ def main():
                 mzs = np.load(f, allow_pickle=True)
                 meta = np.load(f, allow_pickle=True)
 
-                print(meta[0]['comment1'])
+                label = meta[0]['comment1']
+                if label == '':
+                    label = os.path.basename(path)
+                
+                print(label)
                 print(intens.shape)
                 _, binned_intens = bin_data(mzs, intens, meta)
                 print(binned_intens.shape)
-                feature_data_arrays.append((binned_intens, meta[0]['comment1']))
+                feature_data_arrays.append((intens, label))
 
         feature_data = np.empty((1,feature_data_arrays[0][0].shape[1]))
         labels = np.empty((1,))
@@ -361,14 +365,18 @@ def main():
         labels = labels[1:]
 
         feature_data = getTICNormalization(feature_data)
+        #feature_data = PCA(n_components=10).fit_transform(feature_data)
 
         print(feature_data.shape, labels.shape)
-    
 
         FDR, DKC, SC = datasetDP(feature_data, labels)
 
         print('LeaveOneOut CV Results'.center(80, '*'))
-        textstr = 'DKC={:.3e}+-{:.3e}'.format(np.mean(DKC), 2*np.std(DKC)) + 'SC={:.3e}+-{:.3e}'.format(np.mean(SC), 2*np.std(SC))
+        dkc_m, dkc_ci = mean_normal_cinterval(DKC, confidence=0.95)
+        dkc_std = np.std(DKC, ddof=1)
+        sc_m, sc_ci = mean_normal_cinterval(SC, confidence=0.95)
+        sc_std = np.std(SC, ddof=1)
+        textstr = 'DKC={:.3f}+-{:.3f}'.format(dkc_m, 2*dkc_std) + '\tSC={:.3f}+-{:.3f}'.format(sc_m, 2*sc_std)
         print(textstr)
     
 

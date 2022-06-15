@@ -158,7 +158,7 @@ class DataPlot():
         self.options = {
             'legend_checked' : True,
             'sample_order_checked' : False,
-            'show_test_checked' : True,
+            'show_test_checked' : False,
             'model_option' : self.main_gui.main_view.model_combo.currentText(),
             'xaxis_option' : self.main_gui.main_view.xaxis_combo.currentText(),
             'yaxis_option' : self.main_gui.main_view.yaxis_combo.currentText(),
@@ -166,7 +166,7 @@ class DataPlot():
 
         self.main_gui.main_view.showlegend_check.setChecked(self.options['legend_checked'])
         self.main_gui.main_view.sampleorder_check.setChecked(self.options['sample_order_checked'])
-        self.main_gui.main_view.testdata_check.setChecked(self.options['show_test_checked'])
+        self.main_gui.main_view.testlabel_check.setChecked(self.options['show_test_checked'])
         
 
     def change_options(self, options):

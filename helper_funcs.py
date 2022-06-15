@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import os
 from scipy.stats import binned_statistic
+from statistics import NormalDist
+import logging
 
 def checkMZML(path, num_raw):
     num_mzml = len(glob.glob1(f'{path}/MZML', "*.mzml"))
@@ -94,9 +96,50 @@ def white_noise(shape : tuple, magnitude : float):
         return magnitude * np.random.rand(shape[0])
     return magnitude * np.random.rand(xs, ys)
 
+def mean_student_t_cinterval(data, confidence: float = 0.95):
+    """
+    Returns (tuple of) the mean and confidence interval for given data.
+    Data is a np.arrayable iterable.
+
+    from: https://stackoverflow.com/questions/15033511/compute-a-confidence-interval-from-sample-data
+    ref:
+        - https://stackoverflow.com/a/15034143/1601580
+        - https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/eval/meta_eval.py#L19
+    """
+    import scipy.stats
+    import numpy as np
+
+    a: np.ndarray = 1.0 * np.array(data)
+    n: int = len(a)
+    '''if n == 1:
+        logging.warning('The first dimension of your data is 1, perhaps you meant to transpose your data? or remove the'
+                        'singleton dimension?')'''
+    m, se = a.mean(), scipy.stats.sem(a)
+    tp = scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
+    h = se * tp
+    return m, h
+
+def mean_normal_cinterval(data, confidence=0.95):
+    """
+    Returns (tuple of) the mean and confidence interval for given data.
+
+    This assumes the sample size is big enough (let's say more than ~100 points) in order to use the standard normal distribution rather than the student's t distribution to compute the z value
+
+    from: https://stackoverflow.com/questions/15033511/compute-a-confidence-interval-from-sample-data
+    """
+    dist = NormalDist.from_samples(data)
+    z = NormalDist().inv_cdf((1 + confidence) / 2.)
+    h = dist.stdev * z / ((len(data) - 1) ** .5)
+    return dist.mean, h
+
 class ControlStates(enum.Enum):
     READY = 0
     CONVERTING = 1
     PLOTTING = 2
     BUILDING = 3
     LOADING = 4
+
+class CompFlag(enum.Enum):
+    FAILURE = 0
+    SUCCESS = 1
+    UNKNERR = 2

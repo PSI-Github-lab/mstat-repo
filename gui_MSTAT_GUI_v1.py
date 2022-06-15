@@ -42,7 +42,7 @@ class MSTAT_Ctrl():
         
         # Model data table model object
         self.model_data_src = []
-        self.model_data_headers = ['Folder', 'Class Name', '# Samples','Role']
+        self.model_data_headers = ['Folder', 'Class Name', '# Samples', 'Role']
         self.modeldata_model = TableModel(self, self.model_data_headers, self.model_data_src)
         self.modeldata_model.define_col_flags(1, 1)
 
@@ -73,6 +73,7 @@ class MSTAT_Ctrl():
         self.gui.main_view.cleartrainingdata_button.clicked.connect(partial(self.clear_dir_checks, self.trainingdir_model))
         self.gui.main_view.cleartestingdata_button.clicked.connect(partial(self.clear_dir_checks, self.testingdir_model))
         self.gui.main_view.binsize_edit.textChanged.connect(self.change_bin_size)
+        self.gui.main_view.savemodel_button.clicked.connect(self.save_model)
         self.gui.main_view.trainmodel_button.clicked.connect(self.train_model) #partial(self.set_state, ControlStates.BUILDING))
         self.gui.main_view.modelinfo_button.clicked.connect(self.show_model_info)
         self.gui.statusbar_button.clicked.connect(self.convert_RAW)
@@ -120,20 +121,23 @@ class MSTAT_Ctrl():
         #self.gui.showInfo("You clicked Open Training Folder")
         prev_dir = self.config_hdlr.get_option('train directory')
         response = self.gui.folder_dialog(prev_dir)
-        print("Opening training folder", response)
-        self.config_hdlr.set_option('train directory', response)
-        root_index = self.trainingdir_model.setRootPath(response)
-        self.gui.main_view.trainingfolder_tview.setRootIndex(root_index)
+        if response != '':
+            print("Opening training folder", response)
+            self.config_hdlr.set_option('train directory', response)
+            root_index = self.trainingdir_model.setRootPath(response)
+            self.gui.main_view.trainingfolder_tview.setRootIndex(root_index)
+        else:
+            print("Action cancelled")
 
     def open_testing_folder(self):
         #self.gui.showInfo("You clicked Open Testing Folder")
         prev_dir = self.config_hdlr.get_option('test directory')
         response = self.gui.folder_dialog(prev_dir)
-        print("Opening testing folder", response)
-        self.config_hdlr.set_option('test directory', response)
-        self.testingdir_model.setRootPath(response)
-        root_index = self.testingdir_model.index(response)
-        self.gui.main_view.testingfolder_tview.setRootIndex(root_index)
+        if response != '':
+            print("Opening testing folder", response)
+            self.config_hdlr.set_option('test directory', response)
+            root_index = self.testingdir_model.setRootPath(response)
+            self.gui.main_view.testingfolder_tview.setRootIndex(root_index)
 
     def set_state(self, new_state : ControlStates):
         if new_state == ControlStates.READY:
@@ -190,7 +194,7 @@ class MSTAT_Ctrl():
         self.gui.main_view.yaxis_combo.currentIndexChanged.connect(self.update_plot_options)
         self.gui.main_view.showlegend_check.stateChanged.connect(self.update_plot_options)
         self.gui.main_view.sampleorder_check.stateChanged.connect(self.update_plot_options)
-        self.gui.main_view.testdata_check.stateChanged.connect(self.update_plot_options)
+        self.gui.main_view.testlabel_check.stateChanged.connect(self.update_plot_options)
 
     def disconnect_plot_options(self):
         with contextlib.suppress(TypeError):
@@ -199,7 +203,7 @@ class MSTAT_Ctrl():
             self.gui.main_view.yaxis_combo.currentIndexChanged.disconnect()
             self.gui.main_view.showlegend_check.stateChanged.disconnect()
             self.gui.main_view.sampleorder_check.stateChanged.disconnect()
-            self.gui.main_view.testdata_check.stateChanged.disconnect()
+            self.gui.main_view.testlabel_check.stateChanged.disconnect()
 
     def change_model_option(self):
         self.disconnect_plot_options()
@@ -234,7 +238,7 @@ class MSTAT_Ctrl():
 
         show_legend = (self.gui.main_view.showlegend_check.checkState() == 2)
         sample_order = (self.gui.main_view.sampleorder_check.checkState() == 2)
-        show_testdata = (self.gui.main_view.testdata_check.checkState() == 2)
+        show_testdata = (self.gui.main_view.testlabel_check.checkState() == 2)
 
         model_option = self.gui.main_view.model_combo.currentText()
         xaxis_option = self.gui.main_view.xaxis_combo.currentText()
@@ -320,9 +324,6 @@ class MSTAT_Ctrl():
             self.gui.statusprogress_bar.setHidden(False)
             self.gui.reattach_status_bar_button(self.train_model)
 
-    def func(self):
-        self.set_state(ControlStates.BUILDING)
-
     def train_model(self):
         check = self.set_state(ControlStates.BUILDING)
         
@@ -340,25 +341,38 @@ class MSTAT_Ctrl():
             #bin_size = self.gui.main_view.binsize_edit.text()
             
             try:
-                self.pcalda_ctrl.build_model(int(pca_dim))
-                self.change_model_option()
-                self.gui.showInfo("Model training is complete!")
-                self.set_state(ControlStates.PLOTTING)
-                return 1
+                model_exceptions = self.pcalda_ctrl.build_model(int(pca_dim))
+                print(model_exceptions[0])
+                if model_exceptions[0] is None:
+                    self.change_model_option()
+                    self.gui.showInfo("Model training is complete!")
+                    self.set_state(ControlStates.PLOTTING)
+                    return CompFlag.SUCCESS
+                else:
+                    self.gui.showInfo(f"Model training is completed with the following exceptions:\n{model_exceptions}")
+                    return 0
             except ValueError as e:
-                self.gui.showError("One or more of supplied values are invalid.")
+                self.gui.showError(f"One or more of supplied values are invalid.\n{e}")
                 print(e)
                 self.set_state(ControlStates.READY)
-                return 0
+                return CompFlag.FAILURE
             except Exception as e:
-                self.gui.showError("Unknown error occurred.")
+                self.gui.showError(f"Unknown error occurred:\n{e}")
                 print("Unknown error:")
                 print(e)
                 self.set_state(ControlStates.READY)
-                return 2
+                return CompFlag.UNKNERR
         else:
             print("Training not available right now...")
             print(f"Current state: {self.ctrl_state}")
+
+    def save_model(self):
+        if self.pcalda_ctrl.isTrained():
+            name, opt = self.gui.show_file_save('Save Model', self.root_path)
+            if name != '':
+                self.pcalda_ctrl.save_model(name)
+        else:
+            self.gui.showError('Must train model before saving.')
 
     def clear_dir_checks(self, dir_model):
         dir_model.clearData()

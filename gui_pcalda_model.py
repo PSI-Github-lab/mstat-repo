@@ -111,12 +111,21 @@ class PCALDACtrl():
 
         # normalize data and train the model
         norm_data = self.getTICNormalization(binned_data)
-        self.train_model(norm_data, labels)
+        return self.train_model(norm_data, labels)
 
     def train_model(self, data, labels):
         # fit the model with training data
-        self.pred_est.fit(data, labels)
-        self.outl_est.fit(data, labels)
+        train_exc = None
+        outli_exc = None
+        try:
+            self.pred_est.fit(data, labels)
+        except Exception as exc1:
+            train_exc = exc1
+        try:
+            pass#self.outl_est.fit(data, labels)
+        except Exception as exc2:
+            outli_exc = exc2
+        
         self.my_encoder = LabelEncoder().fit(labels)
         le_classes = list(self.my_encoder.classes_)
         self.lda_dim = len(le_classes) - 1
@@ -131,12 +140,18 @@ class PCALDACtrl():
         meta_info = model_dict
 
         # cross-validation
-        cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=self.rnd_state)
-        cv_results = cross_validate(self.pred_est, data, labels, cv=cv, scoring='balanced_accuracy')
-        model_dict['cv_results'] = cv_results
+        try:
+            pass
+            #cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=self.rnd_state)
+            #cv_results = cross_validate(self.pred_est, data, labels, cv=cv, scoring='balanced_accuracy')
+            #model_dict['cv_results'] = cv_results
+        except UserWarning:
+            model_dict['cv_results'] = -1.0
 
         self.model = (self.pred_est, self.outl_est, meta_info)
-        self.trained_flag = True
+        if train_exc is None:
+            self.trained_flag = True
+        return train_exc, outli_exc
 
     def bin_data(self, mzs, intens, meta, bin_size=1.0):
         #print('BINNING', mzs.shape, intens.shape)
@@ -213,26 +228,16 @@ class PCALDACtrl():
         #self.main_gui.statusprogress_bar.setValue(sum(self.worker_progress_list))
         pass
 
-    def saveModel(self, model_name):
-        # save model to external file
-        # create file name based on the model structure
-        r = re.compile(".*__")
-        pred_params = list(pred_est.get_params().keys())
-        pred_ind = pred_params.index(list(filter(r.match, pred_params))[0])
-        pred_name = '-'.join(pred_params[3:pred_ind])
-
-        if outl_est != None:
-            #print(list(outl_est.get_params().keys())[3:])
-            outl_params = list(outl_est.get_params().keys())
-            outl_ind = outl_params.index(list(filter(r.match, outl_params))[0])
-            outl_name = '-'.join(outl_params[3:outl_ind])
-
-            name = f"{pred_name}_{outl_name}" 
-        else:
-            name = pred_name
-
-        joblib.dump((pred_est, outl_est, meta_info), name + ".model")
-        print(f"Generated and saved new model as {name}.model\n")
+    def save_model(self, model_name):
+        """
+        save model to external file (adds .model extension to the path name)
+        """
+        try:
+            joblib.dump(self.model, f"{model_name}.model")
+        except Exception as exc:
+            return 0, exc
+        return 1, Exception()
+        
 
     def get_model(self):
         """
@@ -372,7 +377,7 @@ class PCALDACtrl():
         edges, binned_data = self.bin_data(mzs, data, meta, bin_size=self.bin_size)
         norm_data = self.getTICNormalization(binned_data)
         print(f"PCA-LDA data shape {norm_data.shape}")
-        print(edges[0], edges[-1])
+        #print(edges[0], edges[-1])
         
         return self.pred_est.transform(norm_data), labels
 
