@@ -1,7 +1,7 @@
 import time
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
-from dependencies.directory_dialog import *
+from mstat.dependencies.directory_dialog import *
 from subprocess import Popen, PIPE
 import tqdm
 # from https://thepythoncorner.com/posts/2019-01-13-how-to-create-a-watchdog-in-python-to-look-for-filesystem-changes/

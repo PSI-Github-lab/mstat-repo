@@ -1,22 +1,25 @@
 # coding: utf-8
-from sklearn_hierarchical_classification.classifier import HierarchicalClassifier
-from sklearn_hierarchical_classification.constants import ROOT
-from sklearn.calibration import CalibratedClassifierCV as CalClass
-from sklearn.decomposition import TruncatedSVD, PCA
-from sklearn.cross_decomposition import PLSRegression
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-import numpy as np
-from matplotlib import pyplot as plt, cm
-import colorcet as cc
-import sys
-from datetime import *
-
-
-
-from dependencies.ms_data.MSFileReader import MSFileReader
-from dependencies.ms_data.DataStructure import constructTrainTest
-from dependencies.readModelConfig import *
-from HierarchyClustering import getHier, prob_dendrogram
+try:
+    from sklearn_hierarchical_classification.classifier import HierarchicalClassifier
+    from sklearn_hierarchical_classification.constants import ROOT
+    from sklearn.calibration import CalibratedClassifierCV as CalClass
+    from sklearn.decomposition import TruncatedSVD, PCA
+    from sklearn.cross_decomposition import PLSRegression
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+    import numpy as np
+    from matplotlib import pyplot as plt, cm
+    import colorcet as cc
+    import sys
+    from datetime import *
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+    from mstat.dependencies.ms_data.DataStructure import constructTrainTest
+    from mstat.dependencies.readModelConfig import *
+    from model_HierarchyClustering import getHier, prob_dendrogram
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
 
 # Print iterations progress
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):

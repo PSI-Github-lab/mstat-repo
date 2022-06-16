@@ -7,12 +7,12 @@ import numpy as np
 from matplotlib import  pyplot as plt, cm
 import sys, os
 from datetime import *
-from sklearn.preprocessing import StandardScaler, Normalizer
+#from sklearn.preprocessing import StandardScaler, Normalizer
 
-from dependencies.ms_data.MSFileReader import MSFileReader
-from dependencies.readModelConfig import *
-from dependencies.directory_dialog import *
-from helper_funcs import *
+from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+from mstat.dependencies.readModelConfig import *
+from mstat.dependencies.directory_dialog import *
+from mstat.dependencies.helper_funcs import *
 
 from scipy.spatial.distance import pdist
 import numpy as np
@@ -376,8 +376,9 @@ def main():
         dkc_std = np.std(DKC, ddof=1)
         sc_m, sc_ci = mean_normal_cinterval(SC, confidence=0.95)
         sc_std = np.std(SC, ddof=1)
-        textstr = 'DKC={:.3f}+-{:.3f}'.format(dkc_m, 2*dkc_std) + '\tSC={:.3f}+-{:.3f}'.format(sc_m, 2*sc_std)
+        textstr = '\tDKC={:.3f}+-{:.3f}'.format(dkc_m, 2*dkc_std) + '\tSC={:.3f}+-{:.3f}'.format(sc_m, 2*sc_std)
         print(textstr)
+        print(r'For more information see C:\Users\Jackson\PSI Files Dropbox\Slides\JR\2021-09-07_DiagnosticPower.pptx', '\n')
     
 
 if __name__ == "__main__":

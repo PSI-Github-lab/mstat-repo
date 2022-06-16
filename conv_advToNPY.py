@@ -8,8 +8,8 @@ import os.path
 import time
 from matplotlib import pyplot as plt
 
-from helper_funcs import get_num_files
-from dependencies.directory_dialog import DirHandler, getMultDirFromDialog
+from mstat.dependencies.helper_funcs import get_num_files
+from mstat.dependencies.directory_dialog import DirHandler, getMultDirFromDialog
 
 def calcBins(lowlim, uplim, bin_size):
     num_bins = int((uplim - lowlim)/bin_size)+1
@@ -53,16 +53,16 @@ def main():
         for file in tqdm(os.listdir(directory), desc='Processed files: ', total=len(os.listdir(directory))):
             if file.endswith('csv'):
                 # read csv and skip first row
-                data_frame = pd.read_csv(directory + '/' + file, low_memory=False)
+                data_frame = pd.read_csv(directory + '/' + file, skiprows=[0], low_memory=False)
                 # remove all extra meta data (removing all rows after the first empty row)
-                #try:
-                #    scan_frame = data_frame.iloc[:([i for i, x in enumerate(data_frame.iloc[:,1].isna()) if x][0])]
-                #except:
-                scan_frame = data_frame
+                try:
+                    scan_frame = data_frame.iloc[:([i for i, x in enumerate(data_frame.iloc[:,1].isna()) if x][0])]
+                except:
+                    scan_frame = data_frame
                 # get scans from scan_frame
-                print(scan_frame)
-                file_bins = scan_frame.columns[4:].astype(float)
-                scans = scan_frame.iloc[:,4:].astype(float).values
+                #print(scan_frame)
+                file_bins = scan_frame.columns[1:].astype(float)
+                scans = scan_frame.iloc[:,1:].astype(float).values
                 sum_scans = np.sum(scans, axis=0)
 
                 mzs.append(file_bins)

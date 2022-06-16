@@ -1,21 +1,25 @@
 # coding: utf-8
-from os import pipe
-from matplotlib.markers import MarkerStyle
-import numpy as np
-from matplotlib import projections, pyplot as plt, cm
-from matplotlib.patches import Circle
-import matplotlib.gridspec as gridspec
-import matplotlib as mpl
-from matplotlib import colors
-import sys
-from datetime import *
-import joblib
-from sklearn.decomposition import PCA
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
-import pandas as pd
-
-from dependencies.ms_data.MSFileReader import MSFileReader
+try:
+    from matplotlib.markers import MarkerStyle
+    import numpy as np
+    from matplotlib import projections, pyplot as plt, cm
+    from matplotlib.patches import Circle
+    import matplotlib.gridspec as gridspec
+    import matplotlib as mpl
+    from matplotlib import colors
+    import sys
+    from datetime import *
+    import joblib
+    from sklearn.decomposition import PCA
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+    from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
+    import pandas as pd
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
 
 '''
 Ideas: 

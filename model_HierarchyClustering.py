@@ -1,14 +1,19 @@
-import numpy as np
-import sys
-from matplotlib import cm, pyplot as plt
-import colorcet as cc
-from scipy.cluster.hierarchy import dendrogram, linkage, cophenet
-from scipy.spatial.distance import pdist
-from sklearn.cluster import AgglomerativeClustering
-
-from scipy.spatial import KDTree
-from dependencies.ms_data.MSFileReader import MSFileReader
-from dependencies.ScikitImports import *
+# coding: utf-8
+try:
+    import numpy as np
+    import sys
+    from matplotlib import cm, pyplot as plt
+    from scipy.cluster.hierarchy import dendrogram, linkage, cophenet
+    from scipy.spatial.distance import pdist
+    from sklearn.cluster import AgglomerativeClustering
+    from scipy.spatial import KDTree
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+    from mstat.dependencies.ScikitImports import *
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
 
 np.set_printoptions(precision=5, suppress=True)
 
@@ -26,7 +31,7 @@ def getHier(data, encoder):
     levels = np.flipud(vconvHier(data, encoder))
 
     keys = [chr(x + 65) for x in range(14)]
-    keys[0] = ROOT
+    keys[0] = 'ROOT'
 
     return dict(zip(keys, levels)), linkage_matrix
     

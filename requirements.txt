@@ -1,0 +1,17 @@
+time
+numpy
+scipy
+pytest
+pandas
+matplotlib
+colorcet
+tqdm
+os
+subprocess
+watchdog
+pyteomics
+pymsfilereader
+scikit-learn
+joblib
+pyqt5
+wxpython

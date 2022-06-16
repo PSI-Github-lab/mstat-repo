@@ -1,9 +1,9 @@
 import numpy as np
 import time
 from matplotlib import pyplot as plt
-from helper_funcs import *
-from dependencies.file_conversion.QuadCConversion import quadc_to_numpy_matrix
-from dependencies.directory_dialog import *
+from mstat.dependencies.helper_funcs import *
+from mstat.dependencies.file_conversion.QuadCConversion import quadc_to_numpy_matrix
+from mstat.dependencies.directory_dialog import *
 
 def has_numbers(inputString):
     return any(char.isdigit() for char in inputString)

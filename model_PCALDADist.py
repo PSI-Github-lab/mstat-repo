@@ -1,23 +1,24 @@
 # coding: utf-8
-from dependencies.ScikitImports import *
-import numpy as np
-from matplotlib import pyplot as plt, cm
-import colorcet as cc
-import sys
-from datetime import *
-import joblib
-
-
-from dependencies.ms_data.MSFileReader import MSFileReader
-from dependencies.ms_data.AnalysisVis import labelled_scatter, labelled_scatter_3d, AnalysisVis
-from dependencies.ms_data.MSDataAnalyser import MSDataAnalyser
-from dependencies.bootstrapStats import bootstrap_conf
-#from dependencies.readModelConfig import *
-
-import numpy as np
-import scipy.stats as ss
-
-from scipy.spatial import distance
+try:
+    import numpy as np
+    from matplotlib import pyplot as plt, cm
+    import sys
+    import numpy as np
+    import scipy.stats as ss
+    from scipy.spatial import distance
+    from datetime import *
+    import joblib
+    from mstat.dependencies.ScikitImports import *
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+    from mstat.dependencies.ms_data.AnalysisVis import labelled_scatter, labelled_scatter_3d, AnalysisVis
+    from mstat.dependencies.ms_data.MSDataAnalyser import MSDataAnalyser
+    from mstat.dependencies.bootstrapStats import bootstrap_conf
+    #from dependencies.readModelConfig import *
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
 
 class Mdist:
     def __init__(self, file_reader, pred_est, do_rand=False) -> None:

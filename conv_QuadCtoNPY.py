@@ -2,9 +2,9 @@ import numpy as np
 import time
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-from helper_funcs import get_num_files
-from dependencies.directory_dialog import *
-from dependencies.file_conversion.QuadCConversion import *
+from mstat.dependencies.helper_funcs import get_num_files
+from mstat.dependencies.directory_dialog import *
+from mstat.dependencies.file_conversion.QuadCConversion import *
 
 
 def main():
@@ -40,20 +40,16 @@ def main():
         metadata = []
         mca_check = False
         for file in os.listdir(directory):
-            if file.endswith('txt'):
-                if file.lower() in ['mca.txt', 'mca mode.txt', 'mcamode.txt']:
-                    mca_check = True
-                    print('MCA MODE DETECTED')
+            if file.endswith('txt') and file.lower() in ['mca.txt', 'mca mode.txt', 'mcamode.txt']:
+                mca_check = True
+                print('MCA MODE DETECTED')
 
         for file in tqdm(os.listdir(directory), desc='Processed files: ', total=len(os.listdir(directory))):
-            if file.endswith('txt'):
-                if file.lower() in ['mca.txt', 'mca mode.txt', 'mcamode.txt']:
-                    pass
-                else:
-                    a, b, c = quadc_to_numpy_array(rf'{directory}\{file}', noise_coef=0.0, mca_mode=mca_check)
-                    mzs.append(a)
-                    intens.append(b)
-                    metadata.append(c)
+            if file.endswith('txt') and file.lower() not in ['mca.txt', 'mca mode.txt', 'mcamode.txt']:
+                a, b, c = quadc_to_numpy_array(rf'{directory}\{file}', noise_coef=0.0, mca_mode=mca_check)
+                mzs.append(a)
+                intens.append(b)
+                metadata.append(c)
 
         mzs = mzs[0][0]     # only need one of these lines for now, but that could change...
         intens = np.array(intens)
@@ -72,7 +68,7 @@ def main():
 
     #input('Press ENTER to leave script...')
     #quit()
-    
+
     figure = plt.figure()
 
     i = 0

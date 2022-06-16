@@ -1,18 +1,20 @@
 # coding: utf-8
-# Generic python dependencies
-import sys, os
-import bisect
-import numpy as np
-from numpy.lib.function_base import average, median
-from matplotlib import pyplot as plt, cm
-import colorcet as cc
-import re
-
-# Custom dependencies
-from dependencies.ScikitImports import *
-from dependencies.ms_data.MSFileReader import MSFileReader
-from dependencies.ms_data.DataStructure import constructTrainTest
-from dependencies.ms_data.OutlierTools import removeOutliers
+try:
+    import sys, os
+    import bisect
+    import numpy as np
+    from numpy.lib.function_base import average, median
+    from matplotlib import pyplot as plt
+    import re
+    from mstat.dependencies.ScikitImports import *
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+    from mstat.dependencies.ms_data.DataStructure import constructTrainTest
+    from mstat.dependencies.ms_data.OutlierTools import removeOutliers
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
 
 def plotConfusionMatrix(cm, labels, title):
     """ Plot confusion matrix given a pre-calcuated matrix, class labels, and an appropriate title"""

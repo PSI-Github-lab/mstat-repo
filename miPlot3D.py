@@ -1,17 +1,22 @@
 # coding: utf-8
-import numpy as np
-from matplotlib import pyplot as plt, cm
-from matplotlib.patches import Circle
-import matplotlib.gridspec as gridspec
-import sys
-from datetime import *
-import joblib
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
-import pandas as pd
-
-from dependencies.ms_data.MSFileReader import MSFileReader
-import dependencies.visualize.ellipsoid as ellipsoid
-
+try:
+    import numpy as np
+    from matplotlib import pyplot as plt, cm
+    from matplotlib.patches import Circle
+    import matplotlib.gridspec as gridspec
+    import sys
+    from datetime import *
+    import joblib
+    from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
+    import pandas as pd
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+    import mstat.dependencies.visualize.ellipsoid as ellipsoid
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
+    
 '''
 Ideas: 
 https://scikit-learn.org/stable/auto_examples/classification/plot_lda_qda.html

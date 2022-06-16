@@ -1,16 +1,9 @@
-from os import name
 import sys
-from pyteomics import mzml
-import numpy as np
-from scipy.stats import binned_statistic
-import json
 from subprocess import *
 import os.path
-import mmap
-import re
 
-from dependencies.file_conversion.BatchFile import BatchFile
-from dependencies.file_conversion.MZMLDirectory import MZMLDirectory
+from mstat.dependencies.file_conversion.BatchFile import BatchFile
+from mstat.dependencies.file_conversion.MZMLDirectory import MZMLDirectory
 
 def handleStartUpCommands(help_message):
     ''' Take in user commands passed to the script and display help message if requested. '''

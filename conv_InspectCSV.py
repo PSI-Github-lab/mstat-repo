@@ -1,5 +1,5 @@
 import pandas as pd
-from dependencies.directory_dialog import *
+from mstat.dependencies.directory_dialog import *
 
 def main():
     file_log = 'filelog'
@@ -23,6 +23,11 @@ def main():
 
     print(in_dir)
     frame = pd.read_csv(in_dir)
+    print('FRAME HEAD\n\n', frame.head())
+    print(f'COLUMN NAMES ({len(frame.columns)} columns found)\n\n', frame.columns)
+    print(f'DATA SHAPE: {frame.values.shape}')
+    print('SKIPPING FIRST ROW'.center(80, '*'))
+    frame = pd.read_csv(in_dir, skiprows=[0])
     print('FRAME HEAD\n\n', frame.head())
     print(f'COLUMN NAMES ({len(frame.columns)} columns found)\n\n', frame.columns)
     print(f'DATA SHAPE: {frame.values.shape}')

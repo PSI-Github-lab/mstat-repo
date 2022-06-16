@@ -1,18 +1,21 @@
 # coding: utf-8
-from dependencies.ScikitImports import *
-from sklearn.model_selection import validation_curve, learning_curve
-import numpy as np
-from matplotlib import projections, pyplot as plt, cm
-import colorcet as cc
-import sys, os
-from datetime import *
-
-from dependencies.ms_data.MSFileReader import MSFileReader
-from dependencies.ms_data.AnalysisVis import AnalysisVis
-from dependencies.ms_data.MSDataAnalyser import MSDataAnalyser
-from dependencies.readModelConfig import *
-
-#Todo
+try:
+    from sklearn.model_selection import validation_curve, learning_curve
+    import numpy as np
+    from matplotlib import projections, pyplot as plt, cm
+    import colorcet as cc
+    import sys, os
+    from datetime import *
+    from mstat.dependencies.ScikitImports import *
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+    from mstat.dependencies.ms_data.AnalysisVis import AnalysisVis
+    from mstat.dependencies.ms_data.MSDataAnalyser import MSDataAnalyser
+    from mstat.dependencies.readModelConfig import *
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
 
 def plot_learning_curve(estimator, title, X, y, n_components, axes=None, ylim=None, cv=None,
                         n_jobs=None, train_sizes=np.linspace(0.3, 0.7, 5)):

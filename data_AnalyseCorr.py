@@ -6,8 +6,8 @@ import colorcet as cc
 import sys
 from datetime import *
 
-from dependencies.ms_data.MSFileReader import MSFileReader
-from dependencies.readModelConfig import *
+from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+from mstat.dependencies.readModelConfig import *
 
 # Print iterations progress
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):

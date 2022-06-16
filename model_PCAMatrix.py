@@ -1,15 +1,16 @@
 # coding: utf-8
-# Generic python dependencies
-import sys
-import numpy as np
-from matplotlib import pyplot as plt, cm
-import colorcet as cc
-
-
-# Custom dependencies
-from dependencies.ScikitImports import *
-from dependencies.ms_data.MSFileReader import MSFileReader
-from dependencies.directory_dialog import *
+try:
+    import sys
+    import numpy as np
+    from matplotlib import pyplot as plt
+    from mstat.dependencies.ScikitImports import *
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+    from mstat.dependencies.directory_dialog import *
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
 
 def pcaCompare(feature_data, labels, classes, tc):
     f = np.logical_or((labels == tc), (labels == classes[4]))

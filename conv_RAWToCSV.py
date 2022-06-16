@@ -3,8 +3,8 @@ from subprocess import *
 import time
 import os.path
 
-from dependencies.file_conversion.RAWConversion import *
-from dependencies.directory_dialog import *
+from mstat.dependencies.file_conversion.RAWConversion import *
+from mstat.dependencies.directory_dialog import *
 
 
 def handleStartUpCommands(help_message):

@@ -1,15 +1,20 @@
 # coding: utf-8
-import numpy as np
-from matplotlib import pyplot as plt, cm
-from matplotlib.patches import Circle
-import matplotlib.gridspec as gridspec
-import matplotlib as mpl
-import sys
-from datetime import *
-import pandas as pd
-from dependencies.ScikitImports import *
-
-from dependencies.ms_data.MSFileReader import MSFileReader
+try:
+    import numpy as np
+    from matplotlib import pyplot as plt, cm
+    from matplotlib.patches import Circle
+    import matplotlib.gridspec as gridspec
+    import matplotlib as mpl
+    import sys
+    from datetime import *
+    import pandas as pd
+    from mstat.dependencies.ScikitImports import *
+    from mstat.dependencies.ms_data.MSFileReader import MSFileReader
+except ModuleNotFoundError as exc:
+    print(exc)
+    print('Install the module via "pip install _____" and then try running the script again')
+    input('Press ENTER to leave script...')
+    quit()
 
 '''
 Ideas: 

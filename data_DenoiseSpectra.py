@@ -1,12 +1,11 @@
 # coding: utf-8
 import numpy as np
-from matplotlib import pyplot as plt, cm
-import colorcet as cc
+from matplotlib import pyplot as plt
 import sys
 from datetime import *
 import time
 
-from dependencies.ms_data.MSFileReader import MSFileReader
+from mstat.dependencies.ms_data.MSFileReader import MSFileReader
 
 class Timer(object):
     def __init__(self, name=None):

@@ -1,24 +1,65 @@
 # coding: utf-8
 try:
     import numpy as np
-    from matplotlib import mlab, pyplot as plt, cm
-    import colorcet as cc
+    from matplotlib import pyplot as plt
+    import configparser as cp
+    from logging import config
+    from os.path import exists
     import sys
     import time
     import os
-    import datetime
     from scipy import signal
     from pymsfilereader import MSFileReader
     from scipy.ndimage.morphology import white_tophat
     from scipy.stats import binned_statistic
     from tqdm import tqdm
     import glob
-    from dependencies.file_conversion.RAWConversion import raw_to_numpy_array
+    from mstat.dependencies.file_conversion.RAWConversion import raw_to_numpy_array
+    from mstat.dependencies.directory_dialog import *
 except ModuleNotFoundError as exc:
     print(exc)
     print('Install the module via "pip install _____" and then try running the script again')
     input('Press ENTER to leave script...')
     quit()
+
+class ConfigHandler:
+    new_config = False
+    config_created = False
+
+    def __init__(self, config_name="config.ini", my_path = ".") -> None:
+        self.config = cp.RawConfigParser()
+        self.config_name = config_name
+        self.my_path = my_path
+
+    def read_config(self) -> bool:
+        if exists(self.config_name):
+            self.config.read(self.config_name)
+            self.config_created = True
+            return True
+        return False
+
+    def write_config(self) -> bool:
+        if self.config_created:
+            with open(self.config_name, 'w') as config_file:
+                self.config.write(config_file)
+            return True
+        return False
+
+    def set_option(self, section_name : str, option_name : str, value) -> None:
+        if type(value) is str:
+            self.config.set(section_name, option_name, value)
+        else:
+            self.config.set(section_name, option_name, str(value))
+
+    def get_option(self, section_name : str, option_name : str, value='no val') -> str:
+        return self.config.get(section_name, option_name, fallback=value)
+
+    def create_config(self, section_names : list) -> None:
+        for name in section_names:
+            self.config.add_section(name)
+
+        self.config_created = True
+        self.new_config = True   
 
 def process_single_file(file_name, start, end):
     try:
@@ -57,7 +98,7 @@ def process_single_file(file_name, start, end):
     print('')
     return norm_data, start, end
 
-def process_directory(path, start, end):
+def process_directory(path : str, start : int, end : int, scan_sel : bool, filt : bool):
     num_raw = len(glob.glob1(path,"*.raw"))
     print(f"\n{num_raw} RAW files found in {path}")
 
@@ -72,7 +113,7 @@ def process_directory(path, start, end):
     start_time = time.time()
     for file in tqdm(os.listdir(path), total=num_raw, desc=f'Combining File Spectra {start}-{end}'):
         if file.endswith('raw'):
-            mzs, intens, metadata = raw_to_numpy_array(rf'{path}\{file}', sel_region=False, smoothing=False)
+            mzs, intens, metadata = raw_to_numpy_array(rf'{path}\{file}', sel_region=scan_sel, smoothing=filt)
             #print("Start & End Scan", (metadata['startscan'],metadata['endscan'], int(metadata['endscan'])-int(metadata['startscan'])))
             num_scans.append(int(metadata['numscans']))
             #stats, bins, _ = binned_statistic(mzs, intens, 'sum', bins=900, range=(100, 1000))
@@ -89,18 +130,18 @@ def process_directory(path, start, end):
 
     return norm_data, num_scans, start, end
 
-def estimate_SNR_series(path, start, end, step):
+def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, randomize=False):
     # read data from file(s)
     start_time = time.time()
     num_scans = None
     if '.raw' in path.lower():
         # only single file has been passed
         # look at scans in the single file
-        norm_data, start, end = process_single_file(path, start, end)
+        norm_data, start, end = process_single_file(path, start, end, scan_sel, filt)
     else:
         # directory has been passed
         # check for raw files
-        norm_data, num_scans, start, end = process_directory(path, start, end)
+        norm_data, num_scans, start, end = process_directory(path, start, end, scan_sel, filt)
 
 
     m = norm_data.shape[0]
@@ -125,8 +166,8 @@ def estimate_SNR_series(path, start, end, step):
     ax[0].set_xlabel('bins')
     ax[0].set_ylabel('intensity')
     ax[0].legend()"""
-
-    #np.random.shuffle(norm_data)
+    if randomize: 
+        np.random.shuffle(norm_data)
 
     SNR = []
     x = []
@@ -213,27 +254,49 @@ def handleStartUpCommands(help_message):
     return argm
 
 def main():
-    if argm := handleStartUpCommands(help_message):
-        arg0 = argm[0]
-        rnd_state = 44
-    else:
-        print("Type 'python SNREstimate.py help' for more info")
-        quit()
+    config_hdlr = ConfigHandler(config_name='snrest_config.ini')
+    if not config_hdlr.read_config():
+        config_hdlr.create_config(['SETTINGS'])
+        config_hdlr.set_option('SETTINGS', 'scansel(y/n)', 'n')
+        config_hdlr.set_option('SETTINGS', 'filter (y/n)', 'n')
+        config_hdlr.set_option('SETTINGS', 'randord(y/n)', 'y')
+        config_hdlr.set_option('SETTINGS', 'xaxstep(int)', 5)
+
+        config_hdlr.write_config()
+    
+    scan_sel = ('y' == config_hdlr.get_option('SETTINGS', 'SCANSEL(Y/N)', 'n').lower())
+    filt = ('y' == config_hdlr.get_option('SETTINGS', 'FILTER (Y/N)', 'n').lower())
+    rand = ('y' == config_hdlr.get_option('SETTINGS', 'RANDORD(Y/N)', 'n').lower())
+    xax_step = int(config_hdlr.get_option('SETTINGS', 'XAXSTEP(INT)', 5))
+
+    print("\tCHANGE SETTINGS IN 'snrest.config'\t".center(80, '*'))
+    print("\tCurrent settings", scan_sel, filt, rand, xax_step)
 
     start = 0
-    end = 100
+    end = 1000
 
     fig1, ax = plt.subplots(1,1)
 
-    paths = []
-    if '.txt' in arg0.lower():
-        with open(arg0, 'r') as f:
-            paths.extend(line.strip() for line in f)
-    else:
-        paths = [arg0]
+    # get directories
+    dirhandler = DirHandler(log_name='snrest', dir=os.path.dirname(os.path.abspath(__file__)))
+    dirhandler.readDirs()
+    dirs = dirhandler.getDirs()
 
-    for path in paths:
-        SNR, x = estimate_SNR_series(path, start, end, step=5)
+    # define all directories to run the coversion
+    if 'PREV_SOURCE' in dirs:
+        in_directories = getMultDirFromDialog("Choose folders containing RAW files for analysis", dirs['PREV_SOURCE'])
+    else:
+        in_directories = getMultDirFromDialog("Choose folders containing RAW files for analysis")
+    if len(in_directories) == 0:
+        print('Action cancelled. No directories were selected.')
+        quit()
+    common_src = os.path.commonpath(in_directories)
+    dirhandler.addDir('PREV_SOURCE', common_src)
+
+    dirhandler.writeDirs()
+
+    for path in in_directories:
+        SNR, x = estimate_SNR_series(path, start, end, step=xax_step, scan_sel=scan_sel, filt=filt, randomize=rand)
 
         dirpath, dir = os.path.split(path)
         dirpath, parent_dir = os.path.split(dirpath)

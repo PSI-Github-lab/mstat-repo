@@ -1,20 +1,15 @@
-from dependencies.file_conversion.RAWConversion import raw_to_numpy_array
-
-
+# coding: utf-8
 try:
-    import sys
     from subprocess import *
     import os.path
     import time
     import numpy as np
-    from matplotlib import pyplot as plt, cm
-    import colorcet as cc
-    from dependencies.directory_dialog import *
+    from matplotlib import pyplot as plt
     from scipy.stats import binned_statistic
     from scipy.signal import savgol_filter
-    from scipy.ndimage import uniform_filter1d
     from scipy.ndimage.morphology import white_tophat
-    from dependencies.file_conversion.RAWConversion import raw_to_numpy_matrix
+    from mstat.dependencies.directory_dialog import *
+    from mstat.dependencies.file_conversion.RAWConversion import raw_to_numpy_matrix, raw_to_numpy_array
 except ModuleNotFoundError as e:
     print(e)
     print('Install the module via "pip install ' + str(e).split("'")[-2] + '" in a CMD window and then try running the script again')
