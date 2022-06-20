@@ -321,7 +321,7 @@ def main():
 
     else:
         # get directories
-        dirhandler = DirHandler(log_name='diagpwr', dir=os.path.dirname(os.path.abspath(__file__)))
+        dirhandler = DirHandler(log_name='diagpwr', log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
         dirhandler.readDirs()
         dirs = dirhandler.getDirs()
     
@@ -379,7 +379,8 @@ def main():
         textstr = '\tDKC={:.3f}+-{:.3f}'.format(dkc_m, 2*dkc_std) + '\tSC={:.3f}+-{:.3f}'.format(sc_m, 2*sc_std)
         print(textstr)
         print(r'For more information see C:\Users\Jackson\PSI Files Dropbox\Slides\JR\2021-09-07_DiagnosticPower.pptx', '\n')
-    
+        input('Press ENTER to leave script...')
+        quit()
 
 if __name__ == "__main__":
     main()

@@ -69,46 +69,51 @@ class DataPlot():
         self.plot_data((nx, ny), 'Normal Scatter')
 
     def plot_pcalda_data(self, train, test=None, title="PCA Scores"):
-        train_data, train_labels, train_pairs = train
-        self.plot_scores_data(train_data, train_labels, 'train')
+        try:
+            train_data, train_labels, train_pairs = train
+            self.plot_scores_data(train_data, train_labels, 'train')
 
-        if test is not None:
-            test_data, test_labels, test_pairs = test
-            self.plot_scores_data(test_data, test_labels, 'test')
+            if test is not None:
+                test_data, test_labels, test_pairs = test
+                self.plot_scores_data(test_data, test_labels, 'test')
 
-            label_pairs = sort_tuple_list(list(train_pairs.union(test_pairs)), 1)
-        else:
-            label_pairs = sort_tuple_list(list(train_pairs), 1)
-        print('final label pairs', label_pairs)
+                label_pairs = sort_tuple_list(list(train_pairs.union(test_pairs)), 1)
+            else:
+                label_pairs = sort_tuple_list(list(train_pairs), 1)
+            print('final label pairs', label_pairs)
 
-        labels, colors = list(zip(*label_pairs))
+            labels, colors = list(zip(*label_pairs))
 
-        ax = self.canvas.axes
-        if self.options['legend_checked']:
-            custom_legend_entries = [Circle((0, 0), color=CB_color_cycle[i], lw=4) for i in colors]
-            legend = ax.legend(custom_legend_entries, labels, loc='best')
-            legend.set_draggable(True)
-        ax.set_title(title)
-        ax.set_xlabel(self.options['xaxis_option'])
-        ax.set_ylabel(self.options['yaxis_option'])
-        self.canvas.fig.tight_layout()
-        ax.grid()
-        self.canvas.draw()
+            ax = self.canvas.axes
+            if self.options['legend_checked']:
+                custom_legend_entries = [Circle((0, 0), color=CB_color_cycle[i], lw=4) for i in colors]
+                legend = ax.legend(custom_legend_entries, labels, loc='best')
+                legend.set_draggable(True)
+            ax.set_title(title)
+            ax.set_xlabel(self.options['xaxis_option'])
+            ax.set_ylabel(self.options['yaxis_option'])
+            self.canvas.fig.tight_layout()
+            ax.grid()
+            self.canvas.draw()
+        except Exception as exc:
+            print(exc)
+            print('Could not plot data')
 
     def plot_scores_data(self, data, labels, role):
         # data structure (np array, list)
         # (array) score 1, score 2, color # - (list) label
-        x, y, colors = data[:, 0], data[:, 1], data[:, 2].astype('int')
+        if data is not None:
+            x, y, colors = data[:, 0], data[:, 1], data[:, 2].astype('int')
 
-        ax = self.canvas.axes
-        if role == 'train':
-            #self.class_labels = np.unique(labels)
-            #self.my_cmap = cm.get_cmap(self.cmap_opt, 1+len(self.class_labels))
-            self.train_scatter = ax.scatter(x, y, label=labels, c=CB_color_cycle[colors], marker=self.train_marker)
-        else:
-            #if np.any(colors >= len(self.class_labels)):
-            #    self.class_labels = np.concatenate((self.class_labels, np.array(['unknown'])))
-            self.test_scatter = ax.scatter(x, y, label=labels, c=CB_color_cycle[colors], marker=self.test_marker)
+            ax = self.canvas.axes
+            if role == 'train':
+                #self.class_labels = np.unique(labels)
+                #self.my_cmap = cm.get_cmap(self.cmap_opt, 1+len(self.class_labels))
+                self.train_scatter = ax.scatter(x, y, label=labels, c=CB_color_cycle[colors], marker=self.train_marker)
+            else:
+                #if np.any(colors >= len(self.class_labels)):
+                #    self.class_labels = np.concatenate((self.class_labels, np.array(['unknown'])))
+                self.test_scatter = ax.scatter(x, y, label=labels, c=CB_color_cycle[colors], marker=self.test_marker)
 
     def legend_without_duplicate_labels(self, ax):
         handles, labels = ax.get_legend_handles_labels()

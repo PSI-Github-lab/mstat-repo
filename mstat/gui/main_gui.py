@@ -2,8 +2,9 @@ try:
     from PyQt5 import QtCore, QtGui, QtWidgets
     from PyQt5.QtWidgets import QMessageBox, QInputDialog, QFileDialog
     from mstat.gui.mstatMainUI import Ui_MainWindow as MainUI
-    from dependencies.helper_funcs import ControlStates
+    from mstat.dependencies.helper_funcs import ControlStates
     from mstat.gui.mstatConversionDialogUI import Ui_Dialog as ConvDialogUI
+    from mstat.gui.mstatMetaExploreUI import Ui_Dialog as MetaExploreUI
 except ModuleNotFoundError as e:
     import os
     print(f'From {os.path.basename(__file__)}')
@@ -13,6 +14,24 @@ except ModuleNotFoundError as e:
     quit()
 
 # https://stackoverflow.com/questions/54285057/how-to-include-a-column-of-progress-bars-within-a-qtableview
+
+class MetaExploreGUI(QtWidgets.QDialog):
+    def __init__(self, ctrl):
+        super().__init__()
+        self.ctrl = ctrl
+        self.dialog_view = MetaExploreUI()
+        self.dialog_view.setupUi(self)
+
+    def set_up_table(self, model, header_labels):
+        self.dialog_view.metadata_table.setModel(model)
+        self.dialog_view.metadata_table.verticalHeader().setVisible(False)
+        self.header = self.dialog_view.metadata_table.horizontalHeader()
+        for i in range(0, len(header_labels)):
+            self.header.setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
+
+    def closeEvent(self, event):
+        self.ctrl.set_state(ControlStates.READY)
+        self.close()
 
 class ConvDialogGUI(QtWidgets.QDialog):
     def __init__(self, ctrl):

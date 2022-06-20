@@ -20,25 +20,21 @@ except ModuleNotFoundError as exc:
     input('Press ENTER to leave script...')
     quit()
 
-def get_avg_window(tics):
+def get_avg_window(tics, threshold=-1):
     avg = np.mean(tics)
+    thres = avg if threshold < 0. else threshold
     #print(avg)
-    start = next(x[0] for x in enumerate(tics) if x[1] >= avg)
+    start = next(x[0] for x in enumerate(tics) if x[1] >= thres)
     reverse = tics[::-1]
-    end = -next(x[0] for x in enumerate(reverse) if x[1] >= avg) - 1
+    end = -next(x[0] for x in enumerate(reverse) if x[1] >= thres) - 1
     #print(start, end)
-    return start, end, avg
+    return start, end, thres
 
 def get_summed_spectrum(mzs, intens):
     mean = np.zeros(mzs.shape, dtype='float')
     # iterate through all the scans in one file
     for inten in intens:
         mean = mean + np.array(inten)
-
-        # add binned scan to the sum
-
-    # add up all bins in the row to get a "total" row value
-    total = sum(mean)
 
     return mzs, mean
 
@@ -110,16 +106,18 @@ def raw_to_numpy_array(path : str, sel_region=True, sel_threshold=-1, num_sel_sc
     
     #get average spectrum in window of interest
     if sel_region:
-        start, end, thres = get_avg_window(tics)
+        start, end, thres = get_avg_window(tics, threshold=sel_threshold)
         if num_sel_scans > 0:
             end = start + num_sel_scans - 1
         if end <= -1:
             mzs, sum_intens = get_summed_spectrum(mzs, intens[start:])
         else:
             mzs, sum_intens = get_summed_spectrum(mzs, intens[start:end+1])
+        metadata['scanselect'] = True
     else:
         start, end, thres = 0, -1, 0.0
         mzs, sum_intens = get_summed_spectrum(mzs, intens)
+        metadata['scanselect'] = False
     metadata['startscan'] = start
     metadata['endscan'] = end
     metadata['threshold'] = thres
@@ -127,8 +125,9 @@ def raw_to_numpy_array(path : str, sel_region=True, sel_threshold=-1, num_sel_sc
     # apply filter
     if smoothing:
         savgol_spect = savgol_filter(sum_intens, window, order)
+        metadata['smoothing'] = True
         return mzs, savgol_spect, metadata
-    
+    metadata['smoothing'] = False
     return mzs, sum_intens, metadata
 
 def run_single_batch(directory, file):

@@ -18,24 +18,27 @@ except ModuleNotFoundError as e:
 def checkMZML(path, num_raw):
     num_mzml = len(glob.glob1(f'{path}/MZML', "*.mzml"))
     if num_mzml == num_raw:
-        return 1
+        return CompFlag.SUCCESS, num_raw
     elif num_mzml == 0:
-        return 0
-    return 2
+        return CompFlag.FAILURE, num_raw
+    return CompFlag.NODATA, num_raw
 
-def checkNPY(path, num_raw):
+def checkNPY(path, num_files):
     for file in os.listdir(path):
         if file.endswith('npy'):
             with open(rf'{path}\{file}', 'rb') as f:
-                intens = np.load(f)
+                intens = np.load(f, allow_pickle=True)
 
             num_rows = intens.shape[0]
-            if num_rows == num_raw:
-                return 1
+            if num_rows == num_files:
+                return CompFlag.SUCCESS, num_rows
             elif num_rows == 0:
-                return 0
-            return 2
-    return -1
+                return CompFlag.FAILURE, num_files
+            return CompFlag.DATAFND, num_rows
+    return CompFlag.NODATA, num_files
+
+def npy_file_name(path):
+    return rf'{path}\{os.path.basename(path)}.npy'
 
 def calcBins(low, up, bin_size, mz_lims = None):
     if mz_lims is None:
@@ -53,6 +56,9 @@ def isFloat(value):
     return False
 
 def getFeatureData(frame : pd.DataFrame):
+    """
+    Old function for grabbing feature data from pandas data frame format
+    """
     feature_cols = [col for col in frame if isFloat(col)]     # feature data captured by bins are numeric column labels
     return frame[feature_cols].values
 
@@ -151,3 +157,5 @@ class CompFlag(enum.Enum):
     FAILURE = 0
     SUCCESS = 1
     UNKNERR = 2
+    DATAFND = 3
+    NODATA  = 4

@@ -1,3 +1,4 @@
+from genericpath import exists
 import os.path
 import os
 import wx
@@ -77,20 +78,24 @@ def getFileDialog(message_in, pattern, default_path=os.path.dirname(__file__)):
     return pathname
 
 class DirHandler:
-    def __init__(self, log_name='dirlog', dir=os.path.dirname(__file__)):
+    def __init__(self, log_folder=os.path.dirname(__file__), log_name='dirlog', dir=os.path.dirname(__file__)):
         self.cur_directory = dir
         self.dirs = {}
         self.log_name = log_name
+        self.log_folder = log_folder
+
+        if not exists(self.log_folder):
+            os.mkdir(self.log_folder)
 
         try:
-            with open(self.cur_directory + r'\\' + f"{self.log_name}.log", 'r+') as dirlog:
+            with open(self.log_folder + r'\\' + f"{self.log_name}.log", 'r+') as dirlog:
                 pass
         except Exception:
-            with open(self.cur_directory + r'\\' + f"{self.log_name}.log", 'w+') as dirlog:
+            with open(self.log_folder + r'\\' + f"{self.log_name}.log", 'w+') as dirlog:
                 pass
     
     def readDirs(self):
-        with open(self.cur_directory + r'\\' + f"{self.log_name}.log", 'r+') as dirlog:
+        with open(self.log_folder + r'\\' + f"{self.log_name}.log", 'r+') as dirlog:
             lines = dirlog.readlines()
             if len(lines) > 0 and lines[0].split(' ')[0] in [
                 'PREV_SOURCE',
@@ -108,6 +113,6 @@ class DirHandler:
         return self.dirs
 
     def writeDirs(self):
-        with open(self.cur_directory + r'\\' + f"{self.log_name}.log", 'w+') as dirlog:
+        with open(self.log_folder + r'\\' + f"{self.log_name}.log", 'w+') as dirlog:
             for item in self.dirs.items():
                 dirlog.write(f"{item[0]} {item[1]}\n")

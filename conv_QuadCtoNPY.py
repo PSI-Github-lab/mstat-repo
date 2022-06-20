@@ -11,7 +11,7 @@ def main():
     multi_dir_log = 'quadnpy'
 
     # define working directory
-    dirhandler = DirHandler(log_name=multi_dir_log, dir=os.path.dirname(os.path.abspath(__file__)))
+    dirhandler = DirHandler(log_name=multi_dir_log, log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
     dirhandler.readDirs()
     dirs = dirhandler.getDirs()
 
@@ -27,6 +27,9 @@ def main():
     dirhandler.addDir('PREV_SOURCE', common_src)
 
     dirhandler.writeDirs()
+
+    low_lim = 10.
+    up_lim = 500.
 
     for directory in in_directories:
         if get_num_files(directory, '.txt') == 0:
@@ -44,14 +47,19 @@ def main():
                 mca_check = True
                 print('MCA MODE DETECTED')
 
-        for file in tqdm(os.listdir(directory), desc='Processed files: ', total=len(os.listdir(directory))):
+        for file in os.listdir(directory):#tqdm(, desc='Processed files: ', total=len(os.listdir(directory))):
             if file.endswith('txt') and file.lower() not in ['mca.txt', 'mca mode.txt', 'mcamode.txt']:
                 a, b, c = quadc_to_numpy_array(rf'{directory}\{file}', noise_coef=0.0, mca_mode=mca_check)
+                # TEMP FIX for data of varying lengths
+                #a = a[0]
+                #selection_mask = np.logical_and((a >= low_lim),(a <= up_lim))
+                #a, b = a[selection_mask], b[selection_mask]
                 mzs.append(a)
                 intens.append(b)
                 metadata.append(c)
+                print('Bins Shape', a.shape, a.max(), a.min(), 'Counts Shape', b.shape)
 
-        mzs = mzs[0][0]     # only need one of these lines for now, but that could change...
+        mzs = np.array(mzs) #mzs[0][0]     # only need one of these lines for now, but that could change...
         intens = np.array(intens)
         metadata = np.array(metadata)
 
@@ -72,7 +80,8 @@ def main():
     figure = plt.figure()
 
     i = 0
-    plt.scatter(mzs, intens[i])
+    print('Bins Shape', mzs[i].shape, 'Counts Shape', intens[i].shape)
+    plt.scatter(mzs[i], intens[i])
     plt.title(os.path.basename(metadata[i]['filename']))
     plt.grid()
     plt.xlabel('m/z (Da)')

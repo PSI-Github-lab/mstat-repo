@@ -12,7 +12,7 @@ def main():
     file_log = 'plotnpy'
 
     # define working directory
-    dirhandler = DirHandler(log_name=file_log, dir=os.path.dirname(os.path.abspath(__file__)))
+    dirhandler = DirHandler(log_name=file_log, log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
     dirhandler.readDirs()
     dirs = dirhandler.getDirs()
 

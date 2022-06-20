@@ -63,10 +63,10 @@ class ConversionWorker(QtCore.QRunnable):
             intens = np.array(intens)
             metadata = np.array(metadata)
 
-            file_name = rf'{self.path}\{os.path.basename(self.path)}.npy'
+            file_name = npy_file_name(self.path)
             with open(file_name, 'wb') as f:
                 np.save(f, np.array(intens))
-                np.save(f, np.array(mzs[0]))    # only need one of these lines for now, but that could change...
+                np.save(f, np.array(mzs))
                 np.save(f, np.array(metadata))
 
             print(f"conversion finish items {(i, self.num_files)}")

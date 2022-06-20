@@ -33,7 +33,7 @@ def main():
         quit()
 
     # define working directory
-    dirhandler = DirHandler(log_name='rawtocsv', dir=os.path.dirname(os.path.abspath(__file__)))
+    dirhandler = DirHandler(log_name='rawtocsv', log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
     dirhandler.readDirs()
     dirs = dirhandler.getDirs()
    

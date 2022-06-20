@@ -61,7 +61,7 @@ Console command: python PlotRAW.py <file number> <run RAW conversion>
 
 def main():
     # define all directories to run the coversion
-    dirhandler = DirHandler(os.path.dirname(os.path.abspath(__file__)))
+    dirhandler = DirHandler(log_name='plotraw', log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
     dirhandler.readDirs()
     dirs = dirhandler.getDirs()
    

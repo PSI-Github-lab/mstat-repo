@@ -88,4 +88,4 @@ def quadc_to_numpy_array(path : str, noise_coef=0.0, mca_mode=False):
         spectrum = spectrum + white_noise(shape=spectrum.shape, magnitude=noise_coef*np.mean(spectrum))
         
 
-    return mzs, spectrum, metadata
+    return mzs[0], spectrum, metadata

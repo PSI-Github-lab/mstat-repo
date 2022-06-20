@@ -117,14 +117,19 @@ def process_directory(path : str, start : int, end : int, scan_sel : bool, filt 
             #print("Start & End Scan", (metadata['startscan'],metadata['endscan'], int(metadata['endscan'])-int(metadata['startscan'])))
             num_scans.append(int(metadata['numscans']))
             #stats, bins, _ = binned_statistic(mzs, intens, 'sum', bins=900, range=(100, 1000))
+            intens[np.isnan(intens)] = 0.
             total = sum(intens)
-            if lims not in [(float(metadata['lowlim']), float(metadata['uplim'])), (.0, .0)]:
-                raise ValueError(f"One or more files do not match the {lims} m/z limits")
-            try:
-                norm_data = np.vstack((norm_data, intens / total))
-            except ValueError as exc:
-                norm_data = intens / total
-                lims = (float(metadata['lowlim']), float(metadata['uplim']))
+            #print(total)
+            if total == 0.0:
+                print("ZERO DATA", intens.max(), file)
+            else:
+                if lims not in [(float(metadata['lowlim']), float(metadata['uplim'])), (.0, .0)]:
+                    raise ValueError(f"One or more files do not match the {lims} m/z limits")
+                try:
+                    norm_data = np.vstack((norm_data, intens / total))
+                except ValueError as exc:
+                    norm_data = intens / total
+                    lims = (float(metadata['lowlim']), float(metadata['uplim']))
     print('')
     print("completed in %s seconds".center(80, '*') % (time.time() - start_time))
 
@@ -166,7 +171,9 @@ def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, ra
     ax[0].set_xlabel('bins')
     ax[0].set_ylabel('intensity')
     ax[0].legend()"""
-    if randomize: 
+    if randomize:
+        print('RANDOMIZE')
+        #np.random.seed(2)
         np.random.shuffle(norm_data)
 
     SNR = []
@@ -260,14 +267,16 @@ def main():
         config_hdlr.set_option('SETTINGS', 'scansel(y/n)', 'n')
         config_hdlr.set_option('SETTINGS', 'filter (y/n)', 'n')
         config_hdlr.set_option('SETTINGS', 'randord(y/n)', 'y')
+        config_hdlr.set_option('SETTINGS', 'plottic(y/n)', 'n')
         config_hdlr.set_option('SETTINGS', 'xaxstep(int)', 5)
 
         config_hdlr.write_config()
     
-    scan_sel = ('y' == config_hdlr.get_option('SETTINGS', 'SCANSEL(Y/N)', 'n').lower())
-    filt = ('y' == config_hdlr.get_option('SETTINGS', 'FILTER (Y/N)', 'n').lower())
-    rand = ('y' == config_hdlr.get_option('SETTINGS', 'RANDORD(Y/N)', 'n').lower())
-    xax_step = int(config_hdlr.get_option('SETTINGS', 'XAXSTEP(INT)', 5))
+    scan_sel = ('y' == config_hdlr.get_option('SETTINGS', 'scansel(y/n)', 'n').lower())
+    filt = ('y' == config_hdlr.get_option('SETTINGS', 'filter (y/n)', 'n').lower())
+    rand = ('y' == config_hdlr.get_option('SETTINGS', 'randord(y/n)', 'n').lower())
+    do_tic_plot = ('y' == config_hdlr.get_option('SETTINGS', 'plottic(y/n)', 'n').lower())
+    xax_step = int(config_hdlr.get_option('SETTINGS', 'xaxstep(int)', 5))
 
     print("\tCHANGE SETTINGS IN 'snrest.config'\t".center(80, '*'))
     print("\tCurrent settings", scan_sel, filt, rand, xax_step)
@@ -278,7 +287,7 @@ def main():
     fig1, ax = plt.subplots(1,1)
 
     # get directories
-    dirhandler = DirHandler(log_name='snrest', dir=os.path.dirname(os.path.abspath(__file__)))
+    dirhandler = DirHandler(log_name='snrest', log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
     dirhandler.readDirs()
     dirs = dirhandler.getDirs()
 

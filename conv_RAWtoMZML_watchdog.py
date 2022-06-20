@@ -43,7 +43,7 @@ if __name__ == "__main__":
     my_event_handler.on_moved = on_moved
 
     # define working directory
-    watchfolder = DirHandler("watchfolder", os.path.dirname(os.path.abspath(__file__)))
+    watchfolder = DirHandler("watchfolder", log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
     watchfolder.readDirs()
     dirs = watchfolder.getDirs()
 

@@ -45,7 +45,7 @@ def handleStartUpCommands(help_message):
     return argm
 
 def main():
-    dirhandler = DirHandler(os.path.dirname(os.path.abspath(__file__)))
+    dirhandler = DirHandler(log_name='pcamatrix', log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
     dirhandler.readDirs()
     dirs = dirhandler.getDirs()
 

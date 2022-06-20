@@ -19,7 +19,7 @@ def main():
     multi_dir_log = 'advnpy'
 
     # define working directory
-    dirhandler = DirHandler(log_name=multi_dir_log, dir=os.path.dirname(os.path.abspath(__file__)))
+    dirhandler = DirHandler(log_name=multi_dir_log, log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
     dirhandler.readDirs()
     dirs = dirhandler.getDirs()
 
