@@ -43,6 +43,9 @@ class ConfigHandler:
     def get_option(self, section_name : str, option_name : str, value='no val') -> str:
         return self.config.get(section_name, option_name, fallback=value)
 
+    def get_config_obj(self):
+        return self.config
+
     def create_config(self, section_names : list) -> None:
         for name in section_names:
             self.config.add_section(name)

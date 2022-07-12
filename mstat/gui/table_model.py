@@ -115,6 +115,7 @@ class DataTableModel(QtCore.QAbstractTableModel):
                 return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable
         except Exception as e:
             print(f"Exception occured:\n{e}")
+            print(f'From {os.path.basename(__file__)}')
             print(f"Model Data table flags:\n{self._flags}")
             return QtCore.Qt.ItemIsSelectable
 
@@ -204,5 +205,6 @@ class MetaTableModel(QtCore.QAbstractTableModel):
                 return QtCore.Qt.ItemIsEnabled
         except Exception as e:
             print(f"Exception occured:\n{e}")
+            print(f'From {os.path.basename(__file__)}')
             print(f"Model Data table flags:\n{self._flags}")
             return QtCore.Qt.ItemIsSelectable

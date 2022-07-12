@@ -31,37 +31,53 @@ def main():
     #start_time = time.time()
 
     with open(in_dir, 'rb') as f:
-        a = np.load(f, allow_pickle=True)
-        mzs = np.load(f, allow_pickle=True)
-        c = np.load(f, allow_pickle=True)
+        intens_matrix = np.load(f, allow_pickle=True)
+        mzs_matrix = np.load(f, allow_pickle=True)
+        meta_list = np.load(f, allow_pickle=True)
 
 
     #print(f"--- completed in {time.time() - start_time} seconds ---")
-
+    mode = 'avg'
     figure = plt.figure()
-    i = 1
-    for intens, metadata in zip(a, c):
-        print('Bins Shape', mzs.shape, 'Counts Shape', intens.shape)
-        print('m/z limits', metadata['lowlim'], metadata['uplim'])
+    i = 0
+    bin_size = 0.5
+    if mode == 'ind':
+        for intens, mzs, metadata in zip(intens_matrix, mzs_matrix, meta_list):
+            print('Bins Shape', mzs.shape, 'Counts Shape', intens.shape)
+            print('m/z limits', metadata['lowlim'], metadata['uplim'])
+            i += 1
+            low_lim = float(metadata['lowlim'])
+            up_lim = float(metadata['uplim'])
+            bins, num_bins = calcBins(low_lim, up_lim, bin_size)
+            stats, bin_edges, _ = binned_statistic(mzs, intens / np.sum(intens), 'sum', bins=num_bins, range=(low_lim, up_lim))
 
-        #plt.plot(mzs, intens / np.sum(intens), label=f'Spectral Sum {i}')
-        i += 1
-        #plt.plot(mzs[0], intens[-1], label='Last Scan')
+            stats[np.isnan(stats)] = 0
+            #if i > 0 and i < 45:
+            plt.plot(bin_edges[:-1] + bin_size/2, (i*0.01) + stats, label='Binned Spectral Sum')
+        plt.title(os.path.basename(metadata['filename']))
+    elif mode == 'avg':
+        stat_total = None
+        for intens, mzs, metadata in zip(intens_matrix, mzs_matrix, meta_list):
+            print('Bins Shape', mzs.shape, 'Counts Shape', intens.shape)
+            print('m/z limits', metadata['lowlim'], metadata['uplim'])
+            i += 1
+            
+            low_lim = float(metadata['lowlim'])
+            up_lim = float(metadata['uplim'])
+            bins, num_bins = calcBins(low_lim, up_lim, bin_size)
+            if stat_total is None:
+                stat_total = np.zeros(bins.shape)
+            stats, bin_edges, _ = binned_statistic(mzs, intens / np.sum(intens), 'sum', bins=num_bins, range=(low_lim, up_lim))
+            stats[np.isnan(stats)] = 0
+            stat_total += stats
+            
+        plt.plot(bin_edges[:-1] + bin_size/2, stat_total, label='Binned Spectral Sum')
+        plt.title(in_dir)
+        #plt.legend()
 
-        bin_size = 0.5
-        low_lim = float(metadata['lowlim'])
-        up_lim = float(metadata['uplim'])
-        bins, num_bins = calcBins(low_lim, up_lim, bin_size)
-        stats, bin_edges, _ = binned_statistic(mzs, intens / np.sum(intens), 'sum', bins=num_bins, range=(low_lim, up_lim))
-
-        stats[np.isnan(stats)] = 0
-        if i > 0 and i < 45:
-            plt.plot(bin_edges[:-1] + bin_size/2, stats, label='Binned Spectral Sum')
-    plt.title(os.path.basename(metadata['filename']))
     plt.grid()
     plt.xlabel('m/z (Da)')
     plt.ylabel('counts (A.U.)')
-    #plt.legend()
 
     plt.show()
 

@@ -1,5 +1,6 @@
 try:
     import os
+    import time
     from mstat.dependencies.helper_funcs import *
     from mstat.gui.binning import BinningCtrl
 except ModuleNotFoundError as e:
@@ -20,9 +21,9 @@ def update_bins(self, bin_size, low_lim, up_lim):
         self.gui.setStatusBarButtonText("Train Model")
         self.gui.statusbar_button.setHidden(False)
         self.gui.statusprogress_bar.setHidden(False)
-        self.gui.reattach_status_bar_button(self.train_model)
+        self.gui.reattach_status_bar_button(self.start_build_model)
 
-def train_model(self):
+def start_build_model(self):
     check = self.set_state(ControlStates.BUILDING)
     
     #print(f"Training Data:\n{self.training_dict}")
@@ -33,36 +34,42 @@ def train_model(self):
         if not self.pcalda_ctrl.training_dict:
             self.gui.showError("Training data not selected or not converted.")
             self.set_state(ControlStates.READY)
-            return CompFlag.FAILURE
-        # hand off to PCA-LDA controller, listen for results
-        pca_dim = self.gui.main_view.pcadim_edit.text()
-        
-        try:
-            model_exceptions = self.pcalda_ctrl.build_model(int(pca_dim))
-            print(model_exceptions[0])
-            if model_exceptions[0] is None:
-                self.change_model_option()
-                self.gui.showInfo("Model training is complete!")
-                self.set_state(ControlStates.PLOTTING)
-                return CompFlag.SUCCESS
-            else:
-                self.gui.showInfo(f"Model training is completed with the following exceptions:\n{model_exceptions}")
+        else:
+            # hand off to PCA-LDA controller, listen for results
+            pca_dim = self.gui.main_view.pcadim_edit.text()
+            try:
+                #start_time = time.time()
+                do_diff = (self.data_options['perform differentiation'] == 'True')
+                diff_order = int(self.data_options['differentiation order'])
+                self.pcalda_ctrl.build_model(int(pca_dim), do_diff, diff_order)
+                #print(f"--- completed in {time.time() - start_time} seconds ---")
+                #print(model_exceptions[0])
+                
+            except ValueError as e:
+                self.gui.showError(f"One or more of supplied values are invalid.\n{e}")
+                print(e)
+                print(f'From {os.path.basename(__file__)}')
                 self.set_state(ControlStates.READY)
-                return CompFlag.FAILURE
-        except ValueError as e:
-            self.gui.showError(f"One or more of supplied values are invalid.\n{e}")
-            print(e)
-            self.set_state(ControlStates.READY)
-            return CompFlag.FAILURE
-        except Exception as e:
-            self.gui.showError(f"Unknown error occurred:\n{e}")
-            print("Unknown error:")
-            print(e)
-            self.set_state(ControlStates.READY)
-            return CompFlag.UNKNERR
+            except Exception as e:
+                self.gui.showError(f"Unknown error occurred:\n{e}")
+                print("Unknown error:")
+                print(e)
+                print(f'From {os.path.basename(__file__)}')
+                self.set_state(ControlStates.READY)
     else:
         print("Training not available right now...")
         print(f"Current state: {self.ctrl_state}")
+
+def start_learning_curve(self):
+    if self.pcalda_ctrl.isTrained():
+        self.pcalda_ctrl.learning_curve()
+
+def start_test_model(self):
+    self.set_state(ControlStates.BUILDING)
+    self.pcalda_ctrl.test_model()
+
+def start_test_single_file(self):
+    self.pcalda_ctrl.test_single_file()
 
 def delete_model(self):
     if self.pcalda_ctrl.isTrained():

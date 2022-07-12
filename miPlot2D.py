@@ -376,7 +376,7 @@ class InteractivePlot:
     def highlightPCALDA(self, event, ind, src):
         # change LDA point annotation position
         self.point_annot.xy = (event.xdata, event.ydata)
-
+        print(event, ind, src)
         # update label to select a single point
         names = self.plot_frame['filename'].values
         if src == 2:

@@ -212,7 +212,7 @@ def main():
     cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=rnd_state)
     cv_results = cross_validate(pred_est, training_data, training_labels, cv=cv, scoring='balanced_accuracy')
 
-    # check predicted probability distribution 
+    # check distribution of estimated probability for predicted labels
     like_pred = pred_est.predict_proba(test_data).max(axis=1)
     print(f"Maximum predicted likelihood:   {max(like_pred)}")
     print(f"Median predicted likelihood:    {median(like_pred)}")

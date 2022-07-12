@@ -5,6 +5,9 @@ try:
     from mstat.dependencies.helper_funcs import ControlStates
     from mstat.gui.mstatConversionDialogUI import Ui_Dialog as ConvDialogUI
     from mstat.gui.mstatMetaExploreUI import Ui_Dialog as MetaExploreUI
+    from mstat.gui.mstatDiagPowerResultsUI import Ui_Dialog as DiagPowerResultsUI
+    from mstat.gui.mstatDataQualityResultsUI import Ui_Dialog as DataQualityResultsUI
+    from mstat.gui.mstatTestResultsUI import Ui_Dialog as TestResultsUI
 except ModuleNotFoundError as e:
     import os
     print(f'From {os.path.basename(__file__)}')
@@ -14,6 +17,45 @@ except ModuleNotFoundError as e:
     quit()
 
 # https://stackoverflow.com/questions/54285057/how-to-include-a-column-of-progress-bars-within-a-qtableview
+
+class TestResultsGUI(QtWidgets.QDialog):
+    def __init__(self, ctrl, results):
+        super().__init__()
+        self.ctrl = ctrl
+        self.dialog_view = TestResultsUI()
+        self.dialog_view.setupUi(self)
+
+        self.dialog_view.textEdit.setText(results)
+
+    def closeEvent(self, event):
+        self.ctrl.set_state(ControlStates.READY)
+        self.close()
+
+class DiagPowerResultsGUI(QtWidgets.QDialog):
+    def __init__(self, ctrl, results):
+        super().__init__()
+        self.ctrl = ctrl
+        self.dialog_view = DiagPowerResultsUI()
+        self.dialog_view.setupUi(self)
+
+        self.dialog_view.textEdit.setText(results)
+
+    def closeEvent(self, event):
+        self.ctrl.set_state(ControlStates.READY)
+        self.close()
+
+class DataQualityResultsGUI(QtWidgets.QDialog):
+    def __init__(self, ctrl, results):
+        super().__init__()
+        self.ctrl = ctrl
+        self.dialog_view = DataQualityResultsUI()
+        self.dialog_view.setupUi(self)
+
+        self.dialog_view.textEdit.setText(results)
+
+    def closeEvent(self, event):
+        self.ctrl.set_state(ControlStates.READY)
+        self.close()
 
 class MetaExploreGUI(QtWidgets.QDialog):
     def __init__(self, ctrl):
@@ -181,6 +223,14 @@ class MainGUI(QtWidgets.QMainWindow):
             directory=open_path,
             caption=dialog_caption
         )
+
+    def file_dialog(self, open_path, dialog_caption='Select a RAW file', type_filter="RAW Files (*.raw)") -> str:
+        options = QFileDialog.Options()
+        #options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self, dialog_caption, open_path, type_filter, options=options)
+        if fileName:
+            print(fileName)
+        return fileName
 
     def show_YN_dialog(self, message : str, window_title : str) -> bool:
         ret = QMessageBox.question(self, window_title, message, QMessageBox.Yes | QMessageBox.No)

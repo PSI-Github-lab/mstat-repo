@@ -1,5 +1,6 @@
 try:
     import sys
+    import enum
     import re
     from subprocess import *
     import os.path
@@ -20,6 +21,22 @@ except ModuleNotFoundError as exc:
     input('Press ENTER to leave script...')
     quit()
 
+class ScanSelAlgorithm(enum.Enum):
+    AVG_WINDOW = 0
+    THRES_WINDOW = 1
+    DESC_TIC = 2
+    NUM_FROM_END = 3
+    NUM_FROM_START = 4
+
+ALGO_NAMES = ['scans above average TIC', 'scans above manual threshold TIC', 'manual window of scans with highest TIC', 'manual window from end', 'manual window from start']
+ALGO_DICT = {
+    'scans above average TIC' : ScanSelAlgorithm.AVG_WINDOW, 
+    'scans above manual threshold TIC' : ScanSelAlgorithm.THRES_WINDOW, 
+    'manual window of scans with highest TIC' : ScanSelAlgorithm.DESC_TIC, 
+    'manual window from end' : ScanSelAlgorithm.NUM_FROM_END, 
+    'manual window from start' : ScanSelAlgorithm.NUM_FROM_START,
+}
+
 def get_avg_window(tics, threshold=-1):
     avg = np.mean(tics)
     thres = avg if threshold < 0. else threshold
@@ -30,13 +47,11 @@ def get_avg_window(tics, threshold=-1):
     #print(start, end)
     return start, end, thres
 
-def get_summed_spectrum(mzs, intens):
-    mean = np.zeros(mzs.shape, dtype='float')
-    # iterate through all the scans in one file
-    for inten in intens:
-        mean = mean + np.array(inten)
+def get_above_avg(tics):
+    pass
 
-    return mzs, mean
+def get_above_thres(tics, threshold):
+    pass
 
 def raw_to_numpy_matrix(path : str) -> tuple:
     """
@@ -77,13 +92,14 @@ def raw_to_numpy_matrix(path : str) -> tuple:
         'comment1' : str(raw_file.GetComment1()), 
         'comment2' : str(raw_file.GetComment2()), 
         'lowlim' : str(raw_file.GetLowMass()),
-        'uplim' : str(raw_file.GetHighMass()), 
-        'numscans' : str(num_scans)
+        'uplim' : str(raw_file.GetHighMass()),
+        'avgtic' : str(np.average(tics)), 
+        'totalscans' : str(num_scans)
     }
 
     return mzs, intens, np.array(tics), np.array(times), metadata
 
-def raw_to_numpy_array(path : str, sel_region=True, sel_threshold=-1, num_sel_scans=-1, smoothing=True, window=51, order=2) -> tuple:
+def raw_to_numpy_array(path : str, sel_region=True, sel_algorithm=ScanSelAlgorithm.AVG_WINDOW,sel_threshold=-1, num_sel_scans=-1, smoothing=True, window=51, order=2) -> tuple:
     """
     Sum all scans of a RAW file and returns cumulative spectrum along with file metadata. Also, performs some smoothing using a Savitzky-Golay filter.
     Uses pymsfilereader to read RAW files which relies on the Thermo Fisher MSFileReader library.
@@ -93,6 +109,7 @@ def raw_to_numpy_array(path : str, sel_region=True, sel_threshold=-1, num_sel_sc
     args:
         path            - (str) path to RAW file
         sel_scans       - (bool) select region of scans with high TIC for better signal averaging
+        sel_algorithm   - (ScanSelAlgorithm) method for selecting scans from file
         sel_threshold   - (float) TIC threshold for detecting high TIC region (if -1, threshold is set to average TIC of all scans)
         num_sel_scans   - (int) number of scans selected in high TIC region (if -1, scans will be selected until falling below threshold)
         smoothing       - (bool) perform smoothing true/false
@@ -104,22 +121,22 @@ def raw_to_numpy_array(path : str, sel_region=True, sel_threshold=-1, num_sel_sc
     except Exception as exc:
         raise exc
     
-    #get average spectrum in window of interest
-    if sel_region:
+    # select scans based on chosen algorithm
+    if False:#sel_region:
         start, end, thres = get_avg_window(tics, threshold=sel_threshold)
         if num_sel_scans > 0:
             end = start + num_sel_scans - 1
         if end <= -1:
-            mzs, sum_intens = get_summed_spectrum(mzs, intens[start:])
+            sum_intens = np.sum(intens[start:], axis=0)
         else:
-            mzs, sum_intens = get_summed_spectrum(mzs, intens[start:end+1])
+            sum_intens = np.sum(intens[start:end+1], axis=0)
         metadata['scanselect'] = True
+    
     else:
-        start, end, thres = 0, -1, 0.0
-        mzs, sum_intens = get_summed_spectrum(mzs, intens)
+        num_scans, thres = intens.shape[0], 0.0
+        sum_intens = np.sum(intens, axis=0)
         metadata['scanselect'] = False
-    metadata['startscan'] = start
-    metadata['endscan'] = end
+    metadata['selscans'] = num_scans
     metadata['threshold'] = thres
     
     # apply filter

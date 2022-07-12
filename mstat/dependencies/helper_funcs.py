@@ -48,11 +48,62 @@ def calcBins(low, up, bin_size, mz_lims = None):
     num_bins = int((uplim - lowlim)/bin_size)
     return np.linspace(lowlim, uplim-bin_size, num_bins), num_bins
 
+def bin_data(mzs, intens, meta, bin_size, low, up):
+    bins, num_bins = calcBins(low, up, bin_size)
+    stats, bin_edges, _ = binned_statistic(mzs, intens, 'mean', bins=num_bins, range=(low, up))
+    stats[np.isnan(stats)] = 0
+    return bin_edges + bin_size/2, np.array([stats])
+
+def extract_feature_data(data_dict : dict, bin_size : float, low_lim : float, up_lim : float):
+    """
+    Get all of the feature data in a give data dictionary
+    """
+    intens_dict = {}
+    labels = []
+    for key in data_dict:
+        intens_list = [data_dict[key][x]['intens'] for x in data_dict[key]]
+        mzs_list = [data_dict[key][x]['mzs'] for x in data_dict[key]]
+        binned_list = []
+        #print(len(mzs_list), len(intens_list))
+        for mzs_matrix, intens_matrix in zip(mzs_list, intens_list):
+            for mzs, intens in zip(mzs_matrix, intens_matrix): 
+                #print(mzs.shape, intens.shape)
+                bin_edges, binned_data = bin_data(mzs, intens, None, bin_size, low_lim, up_lim)
+                binned_data[np.isnan(binned_data)] = 0.
+                binned_list.append(binned_data)
+        intens_dict[key] = np.concatenate(binned_list, 0)
+        
+    for key in intens_dict:
+        #print(f"this should be a class: {key}")
+        labels += [key] * intens_dict[key].shape[0]
+    labels = np.array(labels)
+    #print(temp_dict, len(labels))
+    #mzs = np.concatenate([mzs_dict[x] for x in mzs_dict], 0)
+    intens = np.concatenate([intens_dict[x] for x in intens_dict], 0)
+    print('BIN DATA SHAPE', bin_edges[:-1].shape, intens.shape, labels.shape)
+    return bin_edges[:-1], intens, labels
+
+def extract_meta_data(data_dict : dict):
+    """
+    Get numpy array of ordered metadata in a given data dictionary
+    """
+    meta_dict = {}
+    for key in data_dict:
+        meta_dict[key] = np.concatenate([data_dict[key][x]['metadata'] for x in data_dict[key]], 0)
+    #print('META DICT', meta_dict)
+    return np.concatenate([meta_dict[x] for x in meta_dict], 0)
+
 def isFloat(value):
   try:
     float(value)
     return True
   except ValueError:
+    return False
+
+def any_member_not_present(a, b):
+    for element in a:
+        if element not in b:
+            return True
     return False
 
 def getFeatureData(frame : pd.DataFrame):
@@ -159,3 +210,8 @@ class CompFlag(enum.Enum):
     UNKNERR = 2
     DATAFND = 3
     NODATA  = 4
+
+class DataRole(enum.Enum):
+    TRAINING = 0
+    TESTING = 1
+    UNKNOWN = 2

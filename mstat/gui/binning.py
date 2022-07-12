@@ -3,7 +3,6 @@ try:
     from os.path import exists
     import random
     from mstat.dependencies.helper_funcs import *
-    from mstat.dependencies.file_conversion.RAWConversion import raw_to_numpy_array, run_single_batch
     from PyQt5 import QtCore, QtWidgets
     from mstat.gui.mstatBinningDialogUI import Ui_Dialog as BinningDialogGUI
 except ModuleNotFoundError as e:
@@ -44,6 +43,7 @@ class BinningCtrl(QtWidgets.QDialog):
             up_lim = float(self.dialog.uplim_input.text())
             self.main_ctrl.update_bins(bin_size, low_lim, up_lim)
         except Exception as exc:
+            print(f'From {os.path.basename(__file__)}')
             print(exc)
             self.main_gui.showError("Some binning input values were invalid.")
 

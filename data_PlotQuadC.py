@@ -58,7 +58,7 @@ def main():
     stats, bin_edges, _ = binned_statistic(mzs[0], spectrum, 'mean', bins=num_bins, range=(low_lim, up_lim))
 
     stats[np.isnan(stats)] = 0
-    plt.plot(bin_edges[:-1] + bin_size/2, stats, label='Binned Spectral Sum')
+    #plt.plot(bin_edges[:-1] + bin_size/2, stats, label='Binned Spectral Sum')
     plt.title(os.path.basename(metadata['filename']))
     plt.grid()
     plt.xlabel('m/z (Da)')

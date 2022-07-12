@@ -16,6 +16,8 @@ try:
     import glob
     from mstat.dependencies.file_conversion.RAWConversion import raw_to_numpy_array
     from mstat.dependencies.directory_dialog import *
+    from mstat.dependencies.helper_funcs import getTICNormalization
+
 except ModuleNotFoundError as exc:
     print(exc)
     print('Install the module via "pip install _____" and then try running the script again')
@@ -109,6 +111,8 @@ def process_directory(path : str, start : int, end : int, scan_sel : bool, filt 
 
     num_scans = []
     norm_data = np.empty(0)
+    file_names = []
+    tics = []
     lims = (0.0, 0.0)
     start_time = time.time()
     for file in tqdm(os.listdir(path), total=num_raw, desc=f'Combining File Spectra {start}-{end}'):
@@ -119,6 +123,8 @@ def process_directory(path : str, start : int, end : int, scan_sel : bool, filt 
             #stats, bins, _ = binned_statistic(mzs, intens, 'sum', bins=900, range=(100, 1000))
             intens[np.isnan(intens)] = 0.
             total = sum(intens)
+            tics.append(total)
+            file_names.append(file)
             #print(total)
             if total == 0.0:
                 print("ZERO DATA", intens.max(), file)
@@ -133,7 +139,7 @@ def process_directory(path : str, start : int, end : int, scan_sel : bool, filt 
     print('')
     print("completed in %s seconds".center(80, '*') % (time.time() - start_time))
 
-    return norm_data, num_scans, start, end
+    return norm_data, np.array(tics), file_names, num_scans, start, end
 
 def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, randomize=False):
     # read data from file(s)
@@ -146,8 +152,23 @@ def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, ra
     else:
         # directory has been passed
         # check for raw files
-        norm_data, num_scans, start, end = process_directory(path, start, end, scan_sel, filt)
+        if len(glob.glob1(path,"*.npy")) > 0:
+            with open(rf'{path}\{os.path.basename(path)}.npy', 'rb') as f:
+                intens = np.load(f, allow_pickle=True)
+                mzs = np.load(f, allow_pickle=True)
+                meta = np.load(f, allow_pickle=True)
 
+                label = meta[0]['comment1']
+                if label == '':
+                    label = os.path.basename(path)
+                
+                norm_data = getTICNormalization(intens)
+                tics = np.sum(intens, axis=1)
+                file_names = [entry['filename'] for entry in meta]
+
+                end=intens.shape[0]
+        else:
+            norm_data, tics, file_names, num_scans, start, end = process_directory(path, start, end, scan_sel, filt)
 
     m = norm_data.shape[0]
     n = norm_data.shape[1]
@@ -221,8 +242,8 @@ def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, ra
         #ax[1].semilogy(f, Pxx / max(Pxx), color='r', lw=0.5, label='Spectrogram PSD')
         #ax[1].semilogy(f2, Pxx2, color='g', lw=0.5, label='Welch PSD')
         snr = np.sqrt((S / num_s) / (N / num_n))
-        if num_scans is not None:
-            snr = snr #/ np.sqrt(np.mean(num_scans[:j]))
+        #if num_scans is not None:
+        #    snr = snr #/ np.sqrt(np.mean(num_scans[:j]))
         SNR.append(snr)
         x.append(j)
         #print(f"\nSignal ({S}, {num_s}), Noise ({N}, {num_n})")
@@ -230,7 +251,7 @@ def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, ra
 
     print("\nNumber of Scans:", num_scans)
     print("--- completed in %s seconds ---" % (time.time() - start_time))
-    return SNR, x
+    return file_names, tics, SNR, x
 
 help_message = """
 Console Command: python SNREstimate.py <path/base_file_name.csv>
@@ -285,6 +306,11 @@ def main():
     end = 1000
 
     fig1, ax = plt.subplots(1,1)
+    '''if do_tic_plot:
+        fig2, ax2 = plt.subplots(1,1)
+        ax2.set_xlabel('sample (in alphabetical order)')
+        ax2.set_ylabel('TIC (A.U.)')
+        ax2.grid()'''
 
     # get directories
     dirhandler = DirHandler(log_name='snrest', log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
@@ -305,15 +331,22 @@ def main():
     dirhandler.writeDirs()
 
     for path in in_directories:
-        SNR, x = estimate_SNR_series(path, start, end, step=xax_step, scan_sel=scan_sel, filt=filt, randomize=rand)
-
+        file_names, tics, SNR, x = estimate_SNR_series(path, start, end, step=xax_step, scan_sel=scan_sel, filt=filt, randomize=rand)
         dirpath, dir = os.path.split(path)
         dirpath, parent_dir = os.path.split(dirpath)
+        if do_tic_plot:
+            plt.figure()
+            plt.xlabel('sample (in alphabetical order)')
+            plt.xticks(rotation = 90)
+            plt.ylabel('TIC (A.U.)')
+            plt.grid()
+            plt.plot(file_names, tics, label=f'{parent_dir}\{dir}', marker='o')
+            plt.legend()
         print(f"Directory: \t\t{parent_dir}\{dir}")
         print(f"SNR:\t\t{SNR}")
-        print(f"# scans:\t{x}")
+        print(f"# samples:\t{x}")
         ax.plot(x, SNR, label=f'{parent_dir}\{dir}', marker='o')
-    ax.set_xlabel('# scans')
+    ax.set_xlabel('# samples')
     ax.set_ylabel('SNR')
     ax.grid()
     ax.legend()

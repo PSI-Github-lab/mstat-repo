@@ -42,7 +42,8 @@ def main():
     ''' run batch file for converting RAW files to mzML format for each directory'''
     for directory in in_directories:
         if get_num_files(directory, '.csv') == 0:
-            raise ValueError(f'No data files found in {os.path.basename(directory)}')
+            #raise ValueError(f'No data files found in {os.path.basename(directory)}')
+            print(f'No data files found in {os.path.basename(directory)}')
         print('Viewing:', os.path.basename(directory))
 
         start_time = time.time()
@@ -52,7 +53,7 @@ def main():
         metadata = []
         for file in tqdm(os.listdir(directory), desc='Processed files: ', total=len(os.listdir(directory))):
             if file.endswith('csv'):
-                # read csv and skip first row
+                # read csv and skip first row 
                 data_frame = pd.read_csv(directory + '/' + file, skiprows=[0], low_memory=False)
                 # remove all extra meta data (removing all rows after the first empty row)
                 try:
@@ -77,23 +78,25 @@ def main():
                     'numscans' : str(scans.shape[0])
                 }
 
+                '''
+                # uncomment for TOF data
                 file_name = rf'{directory}\{os.path.basename(directory)}.npy'
                 with open(file_name, 'wb') as f:
-                    np.save(f, scans)
-                    np.save(f, file_bins)    
-                    np.save(f, np.array(scans.shape[0] * [meta]))
+                    np.save(f, np.array(scans))
+                    np.save(f, np.array(scans.shape[0] * [file_bins]))
+                    np.save(f, np.array(scans.shape[0] * [meta]))'''
 
                 metadata.append(meta)
                 
-        mzs = mzs[0]     # only need one of these lines for now, but that could change...
+        mzs = np.array(mzs)     # only need one of these lines for now, but that could change...
         intens = np.array(intens)
         metadata = np.array(metadata)
         
-        '''file_name = rf'{directory}\{os.path.basename(directory)}.npy'
+        file_name = rf'{directory}\{os.path.basename(directory)}.npy'
         with open(file_name, 'wb') as f:
             np.save(f, np.array(intens))
-            np.save(f, np.array(mzs))    
-            np.save(f, np.array(metadata))'''
+            np.save(f, np.array(mzs))  
+            np.save(f, np.array(metadata))
 
         print(f"--- completed in {time.time() - start_time} seconds ---")
 
@@ -107,7 +110,7 @@ def main():
     figure = plt.figure()
 
     i = 0
-    plt.scatter(mzs, intens[i])
+    plt.scatter(mzs[i], intens[i])
     plt.title(os.path.basename(metadata[i]['filename']))
     plt.grid()
     plt.xlabel('m/z (Da)')

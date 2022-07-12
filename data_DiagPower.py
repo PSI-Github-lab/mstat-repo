@@ -7,17 +7,14 @@ import numpy as np
 from matplotlib import  pyplot as plt, cm
 import sys, os
 from datetime import *
-#from sklearn.preprocessing import StandardScaler, Normalizer
+from scipy.spatial.distance import pdist
+import itertools
+from tqdm import tqdm
 
-from mstat.dependencies.ms_data.MSFileReader import MSFileReader
 from mstat.dependencies.readModelConfig import *
 from mstat.dependencies.directory_dialog import *
 from mstat.dependencies.helper_funcs import *
-
-from scipy.spatial.distance import pdist
-import numpy as np
-import scipy.spatial as spatial
-import itertools
+from mstat.dependencies.ms_data.DataMetrics import calcDK, calcPCAComplexity, calc1NNError
 
 def unique_combinations(elements):
     """
@@ -80,56 +77,13 @@ def get_dataset(mode, dim):
 	
     return X, y
 
-def calcFDR(class1, class2):
-    prev = 0
-    for feature in range(class1.shape[1]):
-        mu1 = np.mean(class1[:, feature])
-        mu2 = np.mean(class2[:, feature])
-        var1 = np.var(class1[:, feature])
-        var2 = np.var(class2[:, feature])
-
-        val = ((mu1 - mu2)**2) / (var1**2 + var2**2) if var1**2 + var2**2 > 0 else 0
-        if val > prev:
-            prev = val
-
-    return prev
-
-def calcDK(class1, class2):
-    tree1 = spatial.cKDTree(class1)
-    tree2 = spatial.cKDTree(class2)
-
-    dists1, _ = tree1.query(class1, 2)
-    d1 = 2*np.sqrt(np.mean(dists1**2))
-    #print(dists1[:, 1:], d1)
-    dists2, _ = tree2.query(class2, 2)
-    d2 = 2*np.sqrt(np.mean(dists2**2)) #*np.mean(dists2[:, 1:])
-    #print(dists[:, 1], d2)
-
-    s, o = 0, 0
-
-    for i in range(len(class1)):
-        c_point = class1[i]
-
-        s += len(tree1.query_ball_point(c_point, d1))-1
-        o += len(tree2.query_ball_point(c_point, d1))
-
-        #print(c_point, tree1.query_ball_point(c_point, d1), tree2.query_ball_point(c_point, d1))
-
-    for i in range(len(class2)):
-        c_point = class2[i]
-
-        s += len(tree2.query_ball_point(c_point, d2))-1
-        o += len(tree1.query_ball_point(c_point, d2))
-
-        #print(c_point, tree1.query_ball_point(c_point, d2), tree2.query_ball_point(c_point, d2))
-
-    return (s - o) / (s + o)
-
 def diagPower(feature_data, labels):
+    my_metrics = []
     u_labels = np.unique(labels)
-    print(u_labels)
+    #print(u_labels)
+    #print(f"\n\n{np.sum(np.sum(feature_data[(labels==u_labels[0]),:]))} {np.sum(np.sum(feature_data[(labels==u_labels[1]),:]))}")
     # calculate fisher discriminant ratio
-    FDR = calcFDR(feature_data[(labels==u_labels[0]),:], feature_data[(labels==u_labels[1]),:])
+    #FDR = calcFDR(feature_data[(labels==u_labels[0]),:], feature_data[(labels==u_labels[1]),:])
     # calculate dong-kathari coef
     DKC = -1
     ind = -1
@@ -142,33 +96,45 @@ def diagPower(feature_data, labels):
             ind = i
         if DKC == 1.000:
             break
+    my_metrics.append(DKC)
+
     # calculate silhouette_score
     SC = metrics.silhouette_score(feature_data, labels)
+    my_metrics.append(SC)
+
+    # calculate PCA complexity
+    PC = calcPCAComplexity(feature_data)
+    my_metrics.append(PC)
+
+    # calculate 1NN performance
+    NNE = 0#calc1NNError(feature_data, labels)
+    my_metrics.append(NNE)
 
     #print(f"Fisher Discriminant Ratio: {FDR}")
     #print( """Fisher Discr. Ratio:  {:.2e}""".format(FDR))
-    print("""Dong-Kothari Coef:    {:.3f} {:.3f} {:.3f}""".format(DKC, ind, calcDK(feature_data[(labels==u_labels[0]),:], feature_data[(labels==u_labels[1]),:])))
-    print("""Silhouette Coef:      {:.5f}""".format(SC))
+    #print("""Dong-Kothari Coef:    {:.3f} {:.3f} {:.3f}""".format(DKC, ind, calcDK(feature_data[(labels==u_labels[0]),:], feature_data[(labels==u_labels[1]),:])))
+    #print("""Silhouette Coef:      {:.5f}""".format(SC))
 
-    return FDR, DKC, SC
+    return my_metrics
 
 def datasetDP(feature_data, labels):
     u_labels = np.unique(labels)
-    FDRs = []
     DKCs = []
     SCs = []
+    PCs = []
+    NNEs = []
     if len(u_labels) <= 2:
         loo = LeaveOneOut()
-        loo.get_n_splits(feature_data)
+        n_splits = loo.get_n_splits(feature_data)
 
-        for train_index, test_index in loo.split(feature_data):
+        for train_index, test_index in tqdm(loo.split(feature_data), total=n_splits, desc='LOO DIAG POWER'):
             #print("TRAIN:", train_index, "TEST:", test_index)
             X_train, X_test = feature_data[train_index], feature_data[test_index]
             y_train, y_test = labels[train_index], labels[test_index]
 
-            F, D, S = diagPower(X_train, y_train)
-            FDRs.append(F); DKCs.append(D); SCs.append(S)
-        return FDRs, DKCs, SCs
+            D, S, P, N = diagPower(X_train, y_train)
+            DKCs.append(D); SCs.append(S); PCs.append(P); NNEs.append(N)
+        return DKCs, SCs, PCs, NNEs
     
     for pair in unique_combinations(u_labels):
         print(pair)
@@ -176,9 +142,9 @@ def datasetDP(feature_data, labels):
         n2 = len(feature_data[(labels==pair[1]),:])
         data = np.concatenate((feature_data[(labels==pair[0]),:], feature_data[(labels==pair[1]),:]))
 
-        F, D, S = diagPower(data, np.array([pair[0]]*n1 + [pair[1]]*n2))
-        FDRs.append(F); DKCs.append(D); SCs.append(S)
-    return FDRs, DKCs, SCs
+        D, S, P, N = diagPower(data, np.array([pair[0]]*n1 + [pair[1]]*n2))
+        DKCs.append(D); SCs.append(S); PCs.append(P); NNEs.append(N)
+    return DKCs, SCs, PCs, NNEs
 
 from scipy.stats import binned_statistic
 def calcBins(low, up, bin_size, mz_lims = None):
@@ -189,7 +155,7 @@ def calcBins(low, up, bin_size, mz_lims = None):
     num_bins = int((uplim - lowlim)/bin_size)
     return np.linspace(lowlim, uplim-bin_size, num_bins), num_bins
 
-def bin_data(mzs, intens, meta, bin_size=1.0):
+def bin_data(mzs, intens, meta, bin_size=1):
     #print('BINNING', mzs.shape, intens.shape)
     low = float(meta[0]['lowlim'])
     up = float(meta[0]['uplim'])
@@ -197,8 +163,8 @@ def bin_data(mzs, intens, meta, bin_size=1.0):
     bins, num_bins = calcBins(low, up, bin_size)
     rows = []
 
-    for row in intens:
-        stats, bin_edges, _ = binned_statistic(mzs, row, 'sum', bins=num_bins, range=(low, up))
+    for intens_row, mzs_row in zip(intens, mzs):
+        stats, bin_edges, _ = binned_statistic(mzs_row, intens_row, 'mean', bins=num_bins, range=(low, up))
         #print(stats[:5], sum(row), sum(stats))
         new_row = np.concatenate(([sum(stats)], stats)) 
         rows.append(stats)
@@ -298,14 +264,16 @@ def main():
         for dataset, name, i in zip(datasets, names, range(len(names))):
             print(f' {name} '.center(80, '*'))
             feature_data, labels = dataset
+            feature_data = np.nan_to_num(feature_data)
 
             #feature_data = PCA(n_components=2).fit_transform(feature_data)
-            FDR, DKC, SC = diagPower(feature_data, labels)
-
+            my_metrics = diagPower(feature_data, labels)
+            print(my_metrics)
             textstr = '\n'.join((
-                    r'$Max Sep={:.2e}$'.format(np.mean(FDR)),
-                    r'$Overlap=%.3f$' % (DKC, ),
-                    r'$Quality=%.3f$' % (SC, )))
+                    r'$Overlap=%.3f$' % (my_metrics[0], ),
+                    r'$Quality=%.3f$' % (my_metrics[1], ),
+                    r'$PCA Comp={:.3f}$'.format(my_metrics[2]),
+                    r'$1NN Error={:.3f}$'.format(my_metrics[3]),))
 
             ax = plt.subplot(2,3,i+1)
             ax.set_title(f'{name}', size=16)
@@ -318,7 +286,7 @@ def main():
             # place a text box in upper left in axes coords
             ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=12,
                     verticalalignment='top', bbox=props)
-
+        plt.show()
     else:
         # get directories
         dirhandler = DirHandler(log_name='diagpwr', log_folder="mstat/directory logs", dir=os.path.dirname(os.path.abspath(__file__)))
@@ -353,7 +321,7 @@ def main():
                 print(intens.shape)
                 _, binned_intens = bin_data(mzs, intens, meta)
                 print(binned_intens.shape)
-                feature_data_arrays.append((intens, label))
+                feature_data_arrays.append((binned_intens, label))
 
         feature_data = np.empty((1,feature_data_arrays[0][0].shape[1]))
         labels = np.empty((1,))
@@ -364,12 +332,15 @@ def main():
         feature_data = feature_data[1:,:]
         labels = labels[1:]
 
+        #a = a[0]
+        #selection_mask = np.logical_and((a >= low_lim),(a <= up_lim))
+        #a, b = a[selection_mask], b[selection_mask]
+
         feature_data = getTICNormalization(feature_data)
-        #feature_data = PCA(n_components=10).fit_transform(feature_data)
 
         print(feature_data.shape, labels.shape)
 
-        FDR, DKC, SC = datasetDP(feature_data, labels)
+        DKC, SC, PC, NNE = datasetDP(feature_data, labels)
 
         print('LeaveOneOut CV Results'.center(80, '*'))
         dkc_m, dkc_ci = mean_normal_cinterval(DKC, confidence=0.95)
@@ -377,6 +348,12 @@ def main():
         sc_m, sc_ci = mean_normal_cinterval(SC, confidence=0.95)
         sc_std = np.std(SC, ddof=1)
         textstr = '\tDKC={:.3f}+-{:.3f}'.format(dkc_m, 2*dkc_std) + '\tSC={:.3f}+-{:.3f}'.format(sc_m, 2*sc_std)
+        print(textstr)
+        pc_m, pc_ci = mean_normal_cinterval(PC, confidence=0.95)
+        pc_std = np.std(PC, ddof=1)
+        nne_m, nne_ci = mean_normal_cinterval(NNE, confidence=0.95)
+        nne_std = np.std(NNE, ddof=1)
+        textstr = '\tPCA={:.3f}+-{:.3f}'.format(pc_m, 2*pc_std) + '\tNNE={:.3f}+-{:.3f}'.format(nne_m, 2*nne_std)
         print(textstr)
         print(r'For more information see C:\Users\Jackson\PSI Files Dropbox\Slides\JR\2021-09-07_DiagnosticPower.pptx', '\n')
         input('Press ENTER to leave script...')

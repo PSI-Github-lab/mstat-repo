@@ -10,16 +10,26 @@ except ModuleNotFoundError as e:
     quit()
 
 def close_controller(self):
+    # update data conversion options
+    for key in self.data_options:
+        self.config_hdlr.set_option('CONVERSION', key, self.data_options[key])  # = config['CONVERSION'][key]
+
     if self.config_hdlr.write_config():
         print("Configuration has been updated")
 
 def show_about_message(self):
+    """
+    FINISH THIS
+    """
     self.gui.showInfo("About stuff", window_title="About MStat GUI v1")
 
 def show_model_info(self):
+    """
+    Combine and present important information about the model after training
+    """
     if self.pcalda_ctrl.isTrained():
         _, _, meta_info = self.pcalda_ctrl.get_model()
-        print(meta_info.keys())
+        #print(meta_info.keys())
         pcalda_str = f"Model Steps:\n{meta_info['steps']}\n\n"
         data_str = f"Data Parameters\n\nBin Size: {meta_info['bin_size']}\nTraining Data Source (by class):"
         for i in meta_info['training_files']:
@@ -32,14 +42,16 @@ def show_model_info(self):
             cv_str = "\n\nNo cross validation performed"
         else:
             cv_str = "\n\nModel has cross validation accuracy of %0.3f +/- %0.3f" % (cv_results['test_score'].mean(), cv_results['test_score'].std())
-        cv_str += """\n\tAvg fit time of %0.4f and score time of %0.4f""" % (cv_results['fit_time'].mean(), cv_results['score_time'].mean())
+            cv_str += """\n\tAvg fit time of %0.4f and score time of %0.4f""" % (cv_results['fit_time'].mean(), cv_results['score_time'].mean())
         message = pcalda_str + data_str + cv_str
         self.gui.showInfo(message, "PCA-LDA Model Information")
     else:
         self.gui.showError("Model has not been trained yet.")
 
 def open_training_folder(self):
-    #self.gui.showInfo("You clicked Open Training Folder")
+    """
+    Select a root folder for the training data selection tree
+    """
     prev_dir = self.config_hdlr.get_option('MAIN', 'train directory')
     response = self.gui.folder_dialog(prev_dir)
     if response != '':
@@ -51,7 +63,9 @@ def open_training_folder(self):
         print("Action cancelled")
 
 def open_testing_folder(self):
-    #self.gui.showInfo("You clicked Open Testing Folder")
+    """
+    Select a root folder for the testing data selection tree
+    """
     prev_dir = self.config_hdlr.get_option('MAIN', 'test directory')
     response = self.gui.folder_dialog(prev_dir)
     if response != '':
@@ -60,14 +74,18 @@ def open_testing_folder(self):
         root_index = self.testingdir_model.setRootPath(response)
         self.gui.main_view.testingfolder_tview.setRootIndex(root_index)
 
-def clear_dir_checks(self, dir_model):
-    dir_model.clearData()
-    dir_model.layoutChanged.emit()
-    self.training_dict = {}
-    self.testing_dict = {}
-    if dir_model == self.trainingdir_model:     # COME UP WITH BETTER SOLUTION FOR THIS
-        self.pcalda_ctrl.training_dict = {}
-    else:
-        self.pcalda_ctrl.testing_dict = {}
+def clear_dir_checks(self, role : DataRole):
+    """
+    Clear the checkboxes in one of the data selection trees
+    """
+    if role == DataRole.TRAINING:
+        self.trainingdir_model.clearData()
+        self.trainingdir_model.layoutChanged.emit()
+        self.training_dict = {}
+    elif role == DataRole.TESTING:
+        self.testingdir_model.clearData()
+        self.testingdir_model.layoutChanged.emit()
+        self.testing_dict = {}
+    self.pcalda_ctrl.clear_data(role)
     self.update_model_data()
     self.set_state(ControlStates.PLOTTING)
