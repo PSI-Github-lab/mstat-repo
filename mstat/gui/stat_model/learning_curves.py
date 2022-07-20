@@ -80,7 +80,10 @@ def plot_learning_curve(self, estimator, title, X, y, n_components, axes=None, y
 
     # Plot validation curve
     axes[0].grid()
-    param_range = np.arange(start=int(0.25 * n_components), stop=int(3.0 * n_components), step=5, dtype=int)
+    pca1 = int(0.25 * n_components)
+    pca2 = int(3.00 * n_components)
+    stp = int((pca2 - pca1) / 10)
+    param_range = np.arange(start=pca1, stop=pca2, step=stp, dtype=int)
     train_scores, test_scores = validation_curve(
         estimator, X, y, param_name="dim__n_components", param_range=param_range,
         scoring="accuracy", cv=cv)
@@ -89,7 +92,7 @@ def plot_learning_curve(self, estimator, title, X, y, n_components, axes=None, y
     test_scores_mean = np.mean(test_scores, axis=1)
     test_scores_std = np.std(test_scores, axis=1)
 
-    axes[0].set_title("Validation Curve")
+    axes[0].set_title("Learning Curves - PCA Components")
     axes[0].set_xlabel("PCA components")
     axes[0].set_ylabel("Score")
     lw = 2
@@ -98,7 +101,7 @@ def plot_learning_curve(self, estimator, title, X, y, n_components, axes=None, y
     axes[0].fill_between(param_range, train_scores_mean - train_scores_std,
                     train_scores_mean + train_scores_std, alpha=0.2, 
                     color="darkorange", lw=lw)
-    axes[0].plot(param_range, test_scores_mean, 'o-', label="Test score",
+    axes[0].plot(param_range, test_scores_mean, 'o-', label="Validation score",
                 color="navy", lw=lw)
     axes[0].fill_between(param_range, test_scores_mean - test_scores_std,
                     test_scores_mean + test_scores_std, alpha=0.2,
@@ -115,7 +118,7 @@ def plot_learning_curve(self, estimator, title, X, y, n_components, axes=None, y
     test_scores_mean = np.mean(test_scores, axis=1)
     test_scores_std = np.std(test_scores, axis=1)
 
-    axes[1].set_title("Learning Curves")
+    axes[1].set_title("Learning Curves - Number of Samples")
     if ylim is not None:
         axes[1].set_ylim(*ylim)
     axes[1].set_xlabel(f"Training examples (out of {len(X)})")
@@ -132,7 +135,7 @@ def plot_learning_curve(self, estimator, title, X, y, n_components, axes=None, y
     axes[1].plot(train_sizes, train_scores_mean, 'o-', color="r",
                  label="Training score")
     axes[1].plot(train_sizes, test_scores_mean, 'o-', color="g",
-                 label="Test score")
+                 label="Validation score")
     axes[1].legend(loc="best")
 
     plt.show()

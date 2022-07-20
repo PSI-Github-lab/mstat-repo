@@ -2,7 +2,7 @@ try:
     import joblib
     from sklearn.pipeline import Pipeline
     from sklearn.neighbors import LocalOutlierFactor
-    from sklearn.decomposition import TruncatedSVD, PCA
+    from sklearn.decomposition import TruncatedSVD, PCA, FactorAnalysis
     from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
     import pandas as pd
     import numpy as np
@@ -41,6 +41,7 @@ class ModelWorker(QtCore.QRunnable):
     def create_model(self):
         # CREATE MODEL HERE
         steps = [
+            #('dim', FactorAnalysis(n_components=self.pca_dim, random_state=self.rnd_state, rotation='varimax')),
             ('dim', PCA(n_components=self.pca_dim, random_state=self.rnd_state)),
             ('lda', LDA(store_covariance=True)),
             ]
@@ -86,9 +87,11 @@ class ModelWorker(QtCore.QRunnable):
         # meta data from model parameters and info about training file and random seed
         model_dict = self.pred_est.get_params()
         model_dict['training_files'] = self.training_dict
+        model_dict['pca_dim'] = self.pca_dim
         model_dict['bin_size'] = self.bin_size
+        model_dict['low_lim'] = self.low_lim
+        model_dict['up_lim'] = self.up_lim
         model_dict['random_seed'] = self.rnd_state
-        meta_info = model_dict
 
         # cross-validation
         try:
@@ -97,6 +100,8 @@ class ModelWorker(QtCore.QRunnable):
             model_dict['cv_results'] = cv_results
         except Exception as exc:
             model_dict['cv_results'] = CompFlag.FAILURE
+
+        meta_info = model_dict
 
         return (self.pred_est, self.outl_est, meta_info), [train_exc, outli_exc]
 
@@ -113,7 +118,7 @@ def on_model_worker_complete(self, model, model_encoder, exceptions, pca_dim, bi
     self.le_classes = list(self.model_encoder.classes_)
     self.lda_dim = len(self.le_classes) - 1
 
-    print('TRAINiNG COMPLETE', self.le_classes, self.lda_dim)
+    print('TRAINING COMPLETE', self.le_classes, self.lda_dim)
 
     if exceptions[0] is None and self.num_processes == 0:
         self.trained_flag = True

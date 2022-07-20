@@ -1,8 +1,8 @@
+# coding: utf-8
 try:
     import numpy as np
     import sys
     from matplotlib import cm, pyplot as plt
-    import copy
     from scipy.cluster.hierarchy import dendrogram, linkage, cophenet
     from scipy.spatial.distance import pdist
     from sklearn.cluster import AgglomerativeClustering
@@ -144,83 +144,14 @@ def main():
     plt.title("Hierarchical Clustering Dendrogram")
     # plot the top three levels of the dendrogram
     hdict, linkage_matrix = getHier(X, encoder)
-    #print('LM', linkage_matrix)
-    #print('HierDict', hdict)
-
-    '''max_parents = 2
-    bottom_leaves = []
-    trimmed_hdict = hdict.copy()
-    for level, key in enumerate(hdict):
-        print(f"{level}\t{key}\t{hdict[key]}")
-        if level == max_parents:
-            final_cluster = key
-        if level >= max_parents:
-            left_child, right_child = hdict[key][0], hdict[key][1]
-            if left_child not in hdict.keys():
-                bottom_leaves.append(left_child)
-            if right_child not in hdict.keys():
-                bottom_leaves.append(right_child)
-        if level > max_parents:
-            trimmed_hdict.pop(key)
-    trimmed_hdict[final_cluster] = np.array(bottom_leaves)
-    print(trimmed_hdict)'''
-
-    def which_linkage_index(trimmed_linkage, index):
-        for i, linkage in enumerate(trimmed_linkage):
-            if index in linkage[0]:
-                return i
-        return -1
-
-
-    threshold = 0.022
-
-    trimmed_linkage = [[[int(linkage[0]), int(linkage[1])], linkage[2], i+n] for i, linkage in enumerate(linkage_matrix)]
-    for trimmed_l in trimmed_linkage:
-        print(trimmed_l)
-
-    cont = True
-    j = 0
-    while(cont):
-        cont = False
-        for i, linkage in enumerate(trimmed_linkage):
-            #print(i, linkage)
-            if linkage[1] < threshold:
-                cont = True
-                # find new spot
-                right_index = which_linkage_index(trimmed_linkage, n+i+j)
-                #print(right_index)
-                if right_index > -1:
-                    
-                    trimmed_linkage[right_index][0].remove(n+i+j)
-                    trimmed_linkage[right_index][0].extend((linkage[0]))
-
-                    trimmed_linkage.pop(i)
-                    j += 1
-
-                    break
-    
-    for trimmed_l in trimmed_linkage:
-        print(trimmed_l)
-
-    hdict = {}
-    for trimmed_l in trimmed_linkage[::-1]:
-        print(trimmed_l)
-        hdict[convHier(trimmed_l[2], encoder)] = [convHier(e, encoder) for e in trimmed_l[0]]
-    hdict['<ROOT>'] = hdict.pop('A')
-
-    print(hdict)
-
-    
-    
-
     plot_dendrogram(linkage_matrix, truncate_mode="level", p=n-1, labels=encoder.classes_, leaf_rotation=90)
     plt.xlabel("Number of points in node (or index of point if no parenthesis).")
     plt.yticks([])
 
-    '''plt.figure()
+    plt.figure()
     colormap = cm.get_cmap('bone') 
     plt.scatter(X[:,0], X[:,1])#, c=colormap(model.labels_))
-    plt.grid()'''
+    plt.grid()
     plt.show()
 
 if __name__ == "__main__":

@@ -36,7 +36,7 @@ def start_build_model(self):
             self.set_state(ControlStates.READY)
         else:
             # hand off to PCA-LDA controller, listen for results
-            pca_dim = self.gui.main_view.pcadim_edit.text()
+            pca_dim = self.gui.main_view.pcadim_spin.value()
             try:
                 #start_time = time.time()
                 do_diff = (self.data_options['perform differentiation'] == 'True')
@@ -86,3 +86,9 @@ def save_model(self):
             self.pcalda_ctrl.save_model(name)
     else:
         self.gui.showError('Must train model before saving.')
+
+def open_model(self):
+    file_name = self.gui.file_dialog(self.main_training_dir, dialog_caption='Select a model file', type_filter="MODEL Files (*.model)")
+
+    if file_name != '':
+        self.pcalda_ctrl.load_model(file_name)

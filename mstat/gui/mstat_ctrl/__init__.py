@@ -19,9 +19,10 @@ except ModuleNotFoundError as e:
 
 class MStatCtrl():
     # structure of this class over multiple files https://stackoverflow.com/questions/3842616/organizing-python-classes-in-modules-and-or-packages
-    from mstat.gui.mstat_ctrl.data_funcs import update_model_data, update_data_dicts, update_training_table_data, update_testing_table_data, update_tt_dicts, update_conversion_list, convert_RAW, explore_meta, open_data_options, data_quality_analysis, diag_power_analysis
+    from mstat.gui.mstat_ctrl.data_funcs import update_model_data, update_data_dicts, update_training_table_data, update_testing_table_data
+    from mstat.gui.mstat_ctrl.data_funcs import update_tt_dicts, update_conversion_list, convert_RAW, explore_meta, open_data_options, data_quality_analysis, diag_power_analysis, hier_clustering
     from mstat.gui.mstat_ctrl.gui_funcs import open_training_folder, open_testing_folder, show_about_message, show_model_info, clear_dir_checks, close_controller
-    from mstat.gui.mstat_ctrl.model_funcs import start_build_model, start_test_model, start_test_single_file, start_learning_curve, save_model, delete_model, change_bins, update_bins
+    from mstat.gui.mstat_ctrl.model_funcs import start_build_model, start_test_model, start_test_single_file, start_learning_curve, save_model, open_model, delete_model, change_bins, update_bins
     from mstat.gui.mstat_ctrl.plot_funcs import plot_data, update_plot_options, redraw_plot, reset_plot, change_model_option, connect_plot_options, disconnect_plot_options, on_plot_complete
 
     def __init__(self, app, root_path=None, config_hdlr=None) -> None:
@@ -103,8 +104,10 @@ class MStatCtrl():
         self.gui.main_view.actionRe_convert_Selected.triggered.connect(partial(self.convert_RAW, True))
         self.gui.main_view.actionDiagnostic_Power.triggered.connect(self.diag_power_analysis)
         self.gui.main_view.actionQuality_Assessment.triggered.connect(self.data_quality_analysis)
+        self.gui.main_view.actionHierarchical_Clustering.triggered.connect(self.hier_clustering)
         self.gui.main_view.actionDelete.triggered.connect(self.delete_model)
         self.gui.main_view.actionSave.triggered.connect(self.save_model)
+        self.gui.main_view.actionLoad.triggered.connect(self.open_model)
         self.gui.main_view.actionInfo.triggered.connect(self.show_model_info)
         self.gui.main_view.actionTest_File.triggered.connect(self.start_test_single_file)
         self.gui.main_view.actionLearning_Curve.triggered.connect(self.start_learning_curve)

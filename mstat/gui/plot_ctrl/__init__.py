@@ -25,6 +25,18 @@ except ModuleNotFoundError as e:
     input('Press ENTER to leave script...')
     quit()
 
+SMALL_SIZE = 16
+MEDIUM_SIZE = 20
+BIGGER_SIZE = 24
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 class MatplotlibCanvas(FigureCanvas):
     """
     Class for plotting data in the main window
@@ -36,9 +48,13 @@ class MatplotlibCanvas(FigureCanvas):
         #fig.tight_layout()
 
 class DataPlot():
-    CB_color_cycle = np.array(['#377eb8', '#ff7f00', '#4daf4a',
-                  '#f781bf', '#a65628', '#984ea3',
-                  '#999999', '#e41a1c', '#dede00'])
+    CB_color_cycle = np.array([
+        '#377eb8', '#ff7f00', '#4daf4a',
+        '#f781bf', '#a65628', '#984ea3',
+        '#999999', '#e41a1c', '#dede00',
+        '#00ff00', '#a2c4c9', '#bf9000',
+        '#00ffee', '#a2c400', '#bf90ee',
+        ])
 
     from mstat.gui.plot_ctrl.external_plotting import ext_plot_loading_data, ext_plot_pcalda_data
 
@@ -169,7 +185,7 @@ class DataPlot():
             self.train_scatter = ax.scatter(x[known_mask], y[known_mask], label=labels[known_mask], c=color_array[colors[known_mask]], marker=self.train_marker, edgecolors= "black")
 
             if sum(unknown_mask) > 0:
-                self.test_scatter = ax.scatter(x[unknown_mask], y[unknown_mask], label=labels[unknown_mask], c=color_array[colors[unknown_mask]], marker=self.test_marker, edgecolors= "black")
+                self.test_scatter = ax.scatter(x[unknown_mask], y[unknown_mask], label=labels[unknown_mask], c=color_array[colors[unknown_mask]], marker=self.test_marker, edgecolors= "black", s=200)
 
     def plot_loading_data(self, data, title='Loading Plot', ax = None):
         """

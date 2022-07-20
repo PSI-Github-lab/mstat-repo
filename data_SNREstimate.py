@@ -11,6 +11,7 @@ try:
     from scipy import signal
     from pymsfilereader import MSFileReader
     from scipy.ndimage.morphology import white_tophat
+    from sklearn.model_selection import train_test_split, LeaveOneOut
     from scipy.stats import binned_statistic
     from tqdm import tqdm
     import glob
@@ -141,38 +142,38 @@ def process_directory(path : str, start : int, end : int, scan_sel : bool, filt 
 
     return norm_data, np.array(tics), file_names, num_scans, start, end
 
-def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, randomize=False):
-    # read data from file(s)
-    start_time = time.time()
-    num_scans = None
-    if '.raw' in path.lower():
-        # only single file has been passed
-        # look at scans in the single file
-        norm_data, start, end = process_single_file(path, start, end, scan_sel, filt)
-    else:
-        # directory has been passed
-        # check for raw files
-        if len(glob.glob1(path,"*.npy")) > 0:
-            with open(rf'{path}\{os.path.basename(path)}.npy', 'rb') as f:
-                intens = np.load(f, allow_pickle=True)
-                mzs = np.load(f, allow_pickle=True)
-                meta = np.load(f, allow_pickle=True)
+from audioop import cross
+from random import random
+from scipy import rand
+from scipy.stats import binned_statistic
+def calcBins(low, up, bin_size, mz_lims = None):
+    if mz_lims is None:
+        mz_lims = [-np.inf,np.inf]
+    lowlim = max(low, min(mz_lims))
+    uplim = min(up, max(mz_lims))
+    num_bins = int((uplim - lowlim)/bin_size)
+    return np.linspace(lowlim, uplim-bin_size, num_bins), num_bins
 
-                label = meta[0]['comment1']
-                if label == '':
-                    label = os.path.basename(path)
-                
-                norm_data = getTICNormalization(intens)
-                tics = np.sum(intens, axis=1)
-                file_names = [entry['filename'] for entry in meta]
+def bin_data(mzs, intens, meta, bin_size=1):
+    #print('BINNING', mzs.shape, intens.shape)
+    low = float(meta[0]['lowlim'])
+    up = float(meta[0]['uplim'])
+    #print(low, up, bin_size)
+    bins, num_bins = calcBins(low, up, bin_size)
+    rows = []
 
-                end=intens.shape[0]
-        else:
-            norm_data, tics, file_names, num_scans, start, end = process_directory(path, start, end, scan_sel, filt)
+    for intens_row, mzs_row in zip(intens, mzs):
+        stats, bin_edges, _ = binned_statistic(mzs_row, intens_row, 'mean', bins=num_bins, range=(low, up))
+        #print(stats[:5], sum(row), sum(stats))
+        new_row = np.concatenate(([sum(stats)], stats)) 
+        rows.append(stats)
 
+    return bin_edges + bin_size/2, np.array(rows)
+
+def calc_spectral_SNR(norm_data, randomize, start, end, step):
     m = norm_data.shape[0]
     n = norm_data.shape[1]
-    print((m, n), type(norm_data))
+    #print((m, n), type(norm_data))
 
     # show some spectra
     """
@@ -193,14 +194,15 @@ def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, ra
     ax[0].set_ylabel('intensity')
     ax[0].legend()"""
     if randomize:
-        print('RANDOMIZE')
+        #print('RANDOMIZE')
         #np.random.seed(2)
         np.random.shuffle(norm_data)
 
     SNR = []
     x = []
+    first = max(step, 2)
     final = end
-    for j in tqdm(range(step, int(final/step)*step+1, step), total=int(final/step), desc="Creating SNR Plot"):
+    for j in range(first, int(final/step)*step+1, step): #tqdm(, total=int(final/step), desc="Creating SNR Plot"):
         super_spectrum = np.empty((j*n,))
         for i, spectrum in enumerate(norm_data[:j]):
             super_spectrum[i*n:(i+1)*n] = spectrum
@@ -249,9 +251,100 @@ def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, ra
         #print(f"\nSignal ({S}, {num_s}), Noise ({N}, {num_n})")
         #print(f"SNR {np.sqrt((S / num_s) / (N / num_n))}\n")
 
+    return SNR, x
+
+def estimate_SNR_series(path, start, end, step=5, scan_sel=False, filt=False, crossval='none', randomize=False):
+    # read data from file(s)
+    start_time = time.time()
+    num_scans = None
+    if '.raw' in path.lower():
+        # only single file has been passed
+        # look at scans in the single file
+        norm_data, start, end = process_single_file(path, start, end, scan_sel, filt)
+    else:
+        # directory has been passed
+        # check for raw files
+        if len(glob.glob1(path,"*.npy")) > 0:
+            with open(rf'{path}\{os.path.basename(path)}.npy', 'rb') as f:
+                intens = np.load(f, allow_pickle=True)
+                mzs = np.load(f, allow_pickle=True)
+                meta = np.load(f, allow_pickle=True)
+
+                label = meta[0]['comment1']
+                if label == '':
+                    label = os.path.basename(path)
+
+                print(label)
+                print(intens.shape)
+                _, binned_intens = bin_data(mzs, intens, meta)
+                print(binned_intens.shape)
+                
+                norm_data = getTICNormalization(binned_intens)
+                tics = np.sum(intens, axis=1)
+                file_names = [entry['filename'] for entry in meta]
+
+                end=intens.shape[0]
+        else:
+            norm_data, tics, file_names, num_scans, start, end = process_directory(path, start, end, scan_sel, filt)
+
+    
+        
+    if crossval == 'loo':
+        print(f"Performing leave-one-out (loo) cross validation on {norm_data.shape[0]} samples.\nMaximum number of SNR points is {norm_data.shape[0]-1}")
+        randomize = True
+        if randomize:
+        #print('RANDOMIZE')
+        #np.random.seed(2)
+            np.random.shuffle(norm_data)
+        loo = LeaveOneOut()
+        n_splits = loo.get_n_splits(norm_data)
+
+        SNRs = []
+        xs = []
+        for train_index, test_index in tqdm(loo.split(norm_data), total=n_splits, desc='LOO S/N ESTIMATION'):
+            #print("TRAIN:", train_index, "TEST:", test_index)
+            X_train, X_test = norm_data[train_index], norm_data[test_index]
+            SNR, x = calc_spectral_SNR(X_train, randomize, start, end-1, step)
+            SNRs.append(np.array(SNR))
+            xs.append(np.array(x))
+
+        SNRs = np.array(SNRs)
+        xs = np.array(xs)
+
+        snr_mean = np.mean(SNRs, axis=0)
+        snr_std = np.std(SNRs, axis=0, ddof=1)
+        
+    elif '-' in crossval.lower():
+        fraction = 1 - float(crossval.split('-')[0])/100
+        reps = int(crossval.split('-')[1])
+        print(f"Performing cross validation on {100*fraction}% of samples with {reps} repetions.\nMaximum number of SNR points is {int(norm_data.shape[0]*fraction)}")
+    
+        SNRs = []
+        xs = []
+        for _ in tqdm(range(reps), total=reps, desc=f'{crossval} S/N ESTIMATION'):
+            X_train, _, = train_test_split(norm_data, test_size=1-fraction)
+            SNR, x = calc_spectral_SNR(X_train, randomize, start, end-int(norm_data.shape[0]*(1-fraction)), step)
+            SNRs.append(np.array(SNR))
+            xs.append(np.array(x))
+
+        SNRs = np.array(SNRs)
+        xs = np.array(xs)
+
+        snr_mean = np.mean(SNRs, axis=0)
+        snr_std = np.std(SNRs, axis=0, ddof=1)
+
+    else:
+        print(f"No cross validation to be preformed. Using single {'random' if randomize else 'directory'} order.")
+        SNR, x = calc_spectral_SNR(X_train, randomize, start, end, step)
+
+        snr_mean = np.array(SNR)
+        snr_std = None
+
+        SNR, x = calc_spectral_SNR(norm_data, randomize, start, end, step)
+
     print("\nNumber of Scans:", num_scans)
     print("--- completed in %s seconds ---" % (time.time() - start_time))
-    return file_names, tics, SNR, x
+    return file_names, tics, snr_mean, snr_std, x
 
 help_message = """
 Console Command: python SNREstimate.py <path/base_file_name.csv>
@@ -282,28 +375,28 @@ def handleStartUpCommands(help_message):
     return argm
 
 def main():
-    config_hdlr = ConfigHandler(config_name='snrest_config.ini')
+    config_file = 'snrest_config.ini'
+    config_hdlr = ConfigHandler(config_name=config_file)
     if not config_hdlr.read_config():
         config_hdlr.create_config(['SETTINGS'])
-        config_hdlr.set_option('SETTINGS', 'scansel(y/n)', 'n')
-        config_hdlr.set_option('SETTINGS', 'filter (y/n)', 'n')
-        config_hdlr.set_option('SETTINGS', 'randord(y/n)', 'y')
-        config_hdlr.set_option('SETTINGS', 'plottic(y/n)', 'n')
-        config_hdlr.set_option('SETTINGS', 'xaxstep(int)', 5)
+        config_hdlr.set_option('SETTINGS', 'scansel(y/n)',  'n')
+        config_hdlr.set_option('SETTINGS', 'filter (y/n)',  'n')
+        config_hdlr.set_option('SETTINGS', 'crossval(loo/{percent left out}-{num repetitions}/none)', 'loo')
+        config_hdlr.set_option('SETTINGS', 'randord(y/n)',  'y')
+        config_hdlr.set_option('SETTINGS', 'plottic(y/n)',  'n')
+        config_hdlr.set_option('SETTINGS', 'xaxstep(int)',  5)
 
         config_hdlr.write_config()
     
     scan_sel = ('y' == config_hdlr.get_option('SETTINGS', 'scansel(y/n)', 'n').lower())
     filt = ('y' == config_hdlr.get_option('SETTINGS', 'filter (y/n)', 'n').lower())
+    crossval = config_hdlr.get_option('SETTINGS', 'crossval(loo/{percent left out}-{num repetitions}/none)', 'loo').lower()
     rand = ('y' == config_hdlr.get_option('SETTINGS', 'randord(y/n)', 'n').lower())
     do_tic_plot = ('y' == config_hdlr.get_option('SETTINGS', 'plottic(y/n)', 'n').lower())
     xax_step = int(config_hdlr.get_option('SETTINGS', 'xaxstep(int)', 5))
 
-    print("\tCHANGE SETTINGS IN 'snrest.config'\t".center(80, '*'))
-    print("\tCurrent settings", scan_sel, filt, rand, xax_step)
-
-    start = 0
-    end = 1000
+    print(f"CHANGE SETTINGS IN '{config_file}'".center(80, '*'))
+    print("\tCurrent settings", scan_sel, filt, crossval, rand, xax_step)
 
     fig1, ax = plt.subplots(1,1)
     '''if do_tic_plot:
@@ -330,8 +423,11 @@ def main():
 
     dirhandler.writeDirs()
 
+    start = 0
+    end = 10000
+    max_plot_value = .0
     for path in in_directories:
-        file_names, tics, SNR, x = estimate_SNR_series(path, start, end, step=xax_step, scan_sel=scan_sel, filt=filt, randomize=rand)
+        file_names, tics, snr_mean, snr_std, x = estimate_SNR_series(path, start, end, step=xax_step, scan_sel=scan_sel, filt=filt, crossval=crossval, randomize=rand)
         dirpath, dir = os.path.split(path)
         dirpath, parent_dir = os.path.split(dirpath)
         if do_tic_plot:
@@ -343,9 +439,15 @@ def main():
             plt.plot(file_names, tics, label=f'{parent_dir}\{dir}', marker='o')
             plt.legend()
         print(f"Directory: \t\t{parent_dir}\{dir}")
-        print(f"SNR:\t\t{SNR}")
+        print(f"SNR:\t\t{snr_mean}")
         print(f"# samples:\t{x}")
-        ax.plot(x, SNR, label=f'{parent_dir}\{dir}', marker='o')
+        ax.plot(x, snr_mean, label=f'{parent_dir}\{dir}', marker='o')
+        ax.fill_between(x, snr_mean - 2*snr_std,
+                         snr_mean + 2*snr_std, alpha=0.1,
+                         #color="g"
+                         )
+        max_plot_value = max(max_plot_value, max(snr_mean + 2*snr_std))
+    ax.set_ylim([0, max_plot_value])
     ax.set_xlabel('# samples')
     ax.set_ylabel('SNR')
     ax.grid()

@@ -355,7 +355,7 @@ def main():
         nne_std = np.std(NNE, ddof=1)
         textstr = '\tPCA={:.3f}+-{:.3f}'.format(pc_m, 2*pc_std) + '\tNNE={:.3f}+-{:.3f}'.format(nne_m, 2*nne_std)
         print(textstr)
-        print(r'For more information see C:\Users\Jackson\PSI Files Dropbox\Slides\JR\2021-09-07_DiagnosticPower.pptx', '\n')
+        print(r'For more information see PSI Files Dropbox\Slides\JR\2021-09-07_DiagnosticPower.pptx', '\n')
         input('Press ENTER to leave script...')
         quit()
 

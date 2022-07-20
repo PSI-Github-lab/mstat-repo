@@ -3,7 +3,8 @@ try:
     from sklearn_hierarchical_classification.classifier import HierarchicalClassifier
     from sklearn_hierarchical_classification.constants import ROOT
     from sklearn.calibration import CalibratedClassifierCV as CalClass
-    from sklearn.decomposition import TruncatedSVD, PCA
+    from sklearn.model_selection import cross_validate
+    from sklearn.decomposition import TruncatedSVD, PCA, SparsePCA
     from sklearn.cross_decomposition import PLSRegression
     from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
     import numpy as np
@@ -14,34 +15,13 @@ try:
     from mstat.dependencies.ms_data.MSFileReader import MSFileReader
     from mstat.dependencies.ms_data.DataStructure import constructTrainTest
     from mstat.dependencies.readModelConfig import *
-    from model_HierarchyClustering import getHier, prob_dendrogram
+    from mstat.dependencies.hier_clustering import getHier, prob_dendrogram
 except ModuleNotFoundError as exc:
     print(exc)
     print('Install the module via "pip install _____" and then try running the script again')
     input('Press ENTER to leave script...')
     quit()
 
-# Print iterations progress
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
-    # Print New Line on Complete
-    if iteration == total: 
-        print()
 
 help_message = """
 Console Command: python AnalyseCorrelation.py <path/base_file_name.csv> <path/test_file_name.csv>
@@ -64,13 +44,13 @@ preprocessing_options = ['none', 'sscl', 'rscl', 'ptfm']
 def main():
     argm = handleStartUpCommands(help_message)
     if not argm:
-        print("Type 'python AnalyseCorr.py help' for more info")
+        print("Type 'python model_HierPCALDA.py help' for more info")
         quit()
     else:
         file_name = argm[0]
         test_file_name = argm[1]
         file_row = int(argm[2])
-        rnd_state = 44
+        rnd_state = 45
 
     # read training data from the csv file
     file_reader = MSFileReader(file_name)
@@ -84,7 +64,6 @@ def main():
         print(test_reader)
 
         training_data = file_reader.getTICNormalization()
-        
         test_data = test_reader.getTICNormalization()
     else:
         training_data, test_data, training_labels, test_labels = constructTrainTest(
@@ -103,11 +82,12 @@ def main():
         X[i] = mean
     print(X.shape)
 
-    hdict, linkage_matrix = getHier(X, encoder)
+    '''hdict, linkage_matrix = getHier(X, encoder)
+    print(hdict, linkage_matrix)
 
     copy = linkage_matrix
-    copy[:,2] = np.array(np.arange(1, n))
-    
+    copy[:,2] = np.array(np.arange(1, n))'''
+
     '''class_hierarchy = {
         ROOT: ["Fish", "Meat", "Liver", "Skin", 'MouseBrain', 'MouseKidney'],
         "Fish": ['RainbowTrout', 'SteelheadTrout', 'BasaFillet', 'TunaFillet'],
@@ -115,30 +95,43 @@ def main():
         "Liver": ['ChickenLiver', 'MouseLiver'],
         "Skin": ['ChickenSkin', 'PigSkin'],
     }'''
-  
 
-    params = {'dim__n_components': 100}
-    steps = [
+    class_hierarchy = {'B': ['C', 'Epend PostA', 'Epend PostB'], 'C': ['Epend YAP1', 'D'], 'D': ['Epend RELA', 'Med WNT', 'Med SHH', 'Med Group 3', 'Med Group 4'], '<ROOT>': ['Pilo Astro', 'B']}
+  
+    steps1 = [
         #('scl', StandardScaler()),
-        #('dim', TruncatedSVD()),
-        ('svc', SVC(kernel='rbf', C=1, probability=True,
-                          random_state=rnd_state))
+        ('dim', TruncatedSVD(random_state=rnd_state, n_components=40)),
+        ('lda', LDA())
+        #('svc', SVC(kernel='rbf', C=1, probability=True, random_state=rnd_state)),
     ]
-    base_est = Pipeline(steps)
-    #base_est.set_params(**params)
-    #cal_est = CalClass(base_estimator=base_est, cv=2)
+    base1 = Pipeline(steps1)
+
+    steps2 = [
+        ('dim', TruncatedSVD(random_state=rnd_state, n_components=20)),
+        ('lda', LDA())
+    ]
+    base2 = Pipeline(steps2)
+
+    steps3 = [
+        ('dim', TruncatedSVD(random_state=rnd_state, n_components=10)),
+        ('lda', LDA())
+    ]
+    base3 = Pipeline(steps3)
 
     hier_est = HierarchicalClassifier(
-        base_estimator=base_est,
-        class_hierarchy=hdict,
+        base_estimator={
+            '<ROOT>' : base3,
+            'B' : base2,
+            'C' : base3,
+            'D' : base1
+        },
+        class_hierarchy=class_hierarchy,
         #prediction_depth='nmlnp',
         #stopping_criteria=0.9
         #algorithm='lcn',
         #training_strategy='inclusive'
 
     )
-
-    
 
     print(hier_est)
     hier_est.fit(training_data, training_labels)
@@ -152,7 +145,13 @@ def main():
     print(probs)
     print(preds)
 
-    class_order = prob_dendrogram(np.concatenate((np.array([-1.0]), probs[0])), copy, truncate_mode="level", p=n-1, labels=encoder.classes_, leaf_rotation=90, color_threshold=0.0)
+    # perform cross validation
+    cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=rnd_state)
+    cv_results = cross_validate(hier_est, training_data, training_labels, cv=cv, scoring='balanced_accuracy')
+    print(" Model has cross validation accuracy of %0.3f +/- %0.3f" % (cv_results['test_score'].mean(), cv_results['test_score'].std()))
+    print("""   Avg fit time of %0.4f and score time of %0.4f""" % (cv_results['fit_time'].mean(), cv_results['score_time'].mean()))
+
+    '''class_order = prob_dendrogram(np.concatenate((np.array([-1.0]), probs[0])), copy, truncate_mode="level", p=n-1, labels=encoder.classes_, leaf_rotation=90, color_threshold=0.0)
     
     # show final probability for each class at bottom of plot
     leaves = hier_est.classes_[-n:]
@@ -169,7 +168,7 @@ def main():
                         textcoords='offset points',
                         va='top', ha='center', color='white', fontsize=12, weight='bold' if prob > 0.5 else 'normal')
     
-    plt.show()
+    plt.show()'''
 
     '''
     clm = cm.get_cmap('cet_glasbey_light') 

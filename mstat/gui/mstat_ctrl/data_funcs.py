@@ -11,6 +11,7 @@ try:
     from mstat.gui.main_gui import MetaExploreGUI
     from mstat.gui.diag_power import DiagPowerCtrl
     from mstat.gui.data_quality import DataQualityCtrl
+    from mstat.gui.hier_construct import HierCtrl
     from mstat.gui.table_model import MetaTableModel
     from mstat.dependencies.helper_funcs import *
 except ModuleNotFoundError as e:
@@ -234,6 +235,17 @@ def convert_RAW(self, include_everything=False):
 def open_data_options(self):
     self.data_option_ctrl = DataOptionsCtrl(self, self.pcalda_ctrl, self.gui)
 
+def hier_clustering(self):
+    training_keys = self.pcalda_ctrl.training_dict.keys()
+    
+    if self.pcalda_ctrl.isTrained():
+        if len(training_keys) >= 2:
+            self.hier_ctrl = HierCtrl(self, self.pcalda_ctrl, self.gui)
+        else:
+            self.gui.showError("Need at least two classes to perform analysis.")
+    else:
+        self.gui.showError("Train model before hierarchical clustering.")
+
 def diag_power_analysis(self):
     training_keys = self.pcalda_ctrl.training_dict.keys()
     
@@ -241,7 +253,7 @@ def diag_power_analysis(self):
         if len(training_keys) >= 2:
             self.diag_power_ctrl = DiagPowerCtrl(self, self.pcalda_ctrl, self.gui)
         else:
-            self.gui.showError("Need two classes to perform analysis.")
+            self.gui.showError("Need at least two classes to perform analysis.")
     else:
         self.gui.showError("Train model before diagnostic power analysis.")
 

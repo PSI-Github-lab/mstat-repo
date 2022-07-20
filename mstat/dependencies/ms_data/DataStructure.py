@@ -1,5 +1,5 @@
 from math import pi
-from dependencies.ScikitImports import *
+from mstat.dependencies.ScikitImports import *
 
 import joblib
 import numpy as np
@@ -7,7 +7,7 @@ from matplotlib import projections, pyplot as plt
 import sys, os
 from datetime import *
 
-from dependencies.ms_data.MSFileReader import MSFileReader
+from mstat.dependencies.ms_data.MSFileReader import MSFileReader
 
 help_message = """
 Console Command: python DataStructure.py <path/file_name.csv> <save_models>

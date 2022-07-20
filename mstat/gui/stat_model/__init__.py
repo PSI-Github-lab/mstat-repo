@@ -62,6 +62,29 @@ class PCALDACtrl():
             return CompFlag.SUCCESS, Exception()
         return CompFlag.NODATA, Exception()
 
+    def load_model(self, file_name):
+        self.pred_est, self.outl_est, meta_info = joblib.load(file_name)
+        self.model = (self.pred_est, self.outl_est, meta_info)
+
+        self.pca_dim = meta_info['pca_dim']
+        self.bin_size = meta_info['bin_size']
+        self.low_lim = meta_info['low_lim']
+        self.up_lim = meta_info['up_lim']
+        self.meta_info = meta_info
+
+        print("LOADED MODEL PARAMETERS")
+        print('class names', meta_info['training_files'].keys())
+        print('pca_dim', meta_info['pca_dim'])
+        print('bin_size', meta_info['bin_size'])
+        print('low_lim', meta_info['low_lim'])
+        print('up_lim', meta_info['up_lim'])
+
+        self.le_classes = list(meta_info['training_files'].keys())
+        self.lda_dim = len(self.le_classes) - 1
+        self.trained_flag = True
+
+        self.main_gui.main_view.pcadim_spin.setValue(self.pca_dim)
+
     def reset_model(self):
         self.model = None
         self.trained_flag = False
@@ -81,7 +104,8 @@ class PCALDACtrl():
 
     def learning_curve(self):
         _, training_features, training_labels = extract_feature_data(self.training_dict, self.bin_size, self.low_lim, self.up_lim)
-        self.plot_learning_curve(self.pred_est, '', training_features, training_labels, self.pca_dim, axes=None, cv=StratifiedKFold(n_splits=5), train_sizes=np.linspace(0.2, 1, 10))
+        cv = StratifiedKFold(n_splits=20)
+        self.plot_learning_curve(self.pred_est, '', training_features, training_labels, self.pca_dim, axes=None, cv=cv, train_sizes=np.linspace(0.2, 1, 10))
 
     def get_loadings(self, pcalda_flag : bool, axis=0) -> tuple:
         if self.isTrained():
@@ -109,10 +133,10 @@ class PCALDACtrl():
                 return (None, None, None, None, None, None)
             scores_xy = np.empty((scores.shape[0], 2))
             if not label_unknowns:
-                labels = ['unknown' if s not in self.model_encoder.classes_ else s for s in labels]
+                labels = ['unknown' if s not in self.le_classes else s for s in labels]
             scores_xy[:,0] = scores[:,pcx]
             scores_xy[:,1] = scores[:,pcy]
-            return scores_xy, labels, self.model_encoder.classes_, feature_data, mzs, sample_names
+            return scores_xy, labels, self.le_classes, feature_data, mzs, sample_names
         else:
             self.main_gui.showError("PCA-LDA Model has not been trained yet.")
             return (None, None, None, None, None, None)
@@ -128,10 +152,10 @@ class PCALDACtrl():
                     return (None, None, None, None, None, None)
                 scores_xy = np.empty((scores.shape[0], 2))
                 if not label_unknowns:
-                    labels = ['unknown' if s not in self.model_encoder.classes_ else s for s in labels]
+                    labels = ['unknown' if s not in self.le_classes else s for s in labels]
                 scores_xy[:,0] = scores[:,pcx]
                 scores_xy[:,1] = scores[:,pcy]
-                return scores_xy, labels, self.model_encoder.classes_, feature_data, mzs, sample_names
+                return scores_xy, labels, self.le_classes, feature_data, mzs, sample_names
             else:
                 self.main_gui.showError("PCA-LDA Controller has no testing data.")
                 return (None, None, None, None, None, None)

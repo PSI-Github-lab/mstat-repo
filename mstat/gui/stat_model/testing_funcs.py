@@ -38,7 +38,7 @@ def plotConfusionMatrix(cm, labels, title):
     for i in range(len(labels)):
         for j in range(len(labels)):
             text = ax.text(j, i, "%0.2f" % cm[i, j],
-                        ha="center", va="center", color="w")
+                        ha="center", va="center", color="black", fontweight="bold")
 
     ax.set_title(title)
     ax.set_xlabel('Predicted Label')
